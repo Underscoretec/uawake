@@ -26,16 +26,22 @@ can never be "ended" without a cause. `deadline` is the resolved wall-clock end.
 Owns every session and is the only holder of assertions. `start` acquires before
 returning (and throws without creating a session on failure); `stop`/`stopAll`
 release immediately; `extend`, `pause`, `resume` adjust deadlines and assertions.
-`sessions` is observable for SwiftUI; `endedSessions()` streams every end with its
-cause for notifications and, later, history.
+`sessions` is observable for SwiftUI. `events()` streams `SessionEvent`s:
+`started`, `aboutToEnd` (a duration or until-time session reaching `endWarning` before
+its deadline; sessions shorter than the lead time are not warned) and `ended` (carrying
+its cause). Notifications, the UI and, later, history consume it.
 
 - **Toggle** (menu bar primary click and `uawake://toggle`): only manual and URL
   sessions count as "on". If any exist they are stopped; otherwise the default
   session starts. Rule and CLI sessions are never stopped or counted.
 - **Extend** works only on duration and until-time sessions; others throw
   `notExtendable` and the UI hides the control.
-- **Policy**: setting `policy` recomputes the cap deadline of active capped sessions.
-- **Device state**: `apply(_:)` ends reached battery-level sessions, then guard verdicts.
+- **Policy**: setting `policy` recomputes the cap deadline of active capped sessions and
+  re-runs the guards on the last device state.
+- **Device state**: `apply(_:)` ends reached battery-level sessions (`expired`), then guard
+  verdicts. A guard ends every live session, paused ones included.
+- **Refused starts**: `start` throws `wouldEndImmediately(cause)` when a guard, or the
+  session's own battery level, already applies to the last device state. No session is created.
 - **Lifecycle**: `handle(_:)` pauses active sessions when the user session resigns,
   resumes them when it returns, and on wake ends sessions whose deadline passed.
   Deadlines are wall-clock, so time asleep counts.
@@ -64,7 +70,9 @@ A `Guard` is a pure function: given a `DeviceState`, the live sessions and a
 `GuardPolicy`, it returns `GuardVerdict`s (session id + `EndCause`). The engine
 re-evaluates on every device-state change. The maximum cap is time-based, so the
 engine applies it as a deadline rather than a guard. `GuardPolicy` holds thresholds
-with spec defaults (20% battery, LPM on, thermal on, 24 h cap).
+with spec defaults (20% battery, LPM on, thermal on, 24 h cap). The 0.1 guards are
+`BatteryGuard`, `LowPowerModeGuard` and `ThermalGuard` (`DefaultSessionEngine.standardGuards`),
+each ending sessions with its own `EndCause`.
 
 **Threading:** `Sendable` values and protocol.
 
@@ -92,13 +100,31 @@ so an invalid URL is rejected before the engine is touched. Strict:
 - `until` is 24-hour `HH:mm`; `display` is `1`/`true` or `0`/`false`.
 - `reason` is 1–128 characters and becomes `SessionReason.custom`.
 
-**Threading:** `Sendable` values; parse anywhere.
+`URLRouter.route(_:to:defaultCondition:)` carries a URL out on the engine:
+`activate` starts a `.url` session, `deactivate` stops manual and URL sessions, and
+`toggle` calls `engine.toggle` with the primary-click preset. Invalid URLs and refused
+starts change nothing and log a warning.
+
+**Threading:** `URLCommand` values are `Sendable` and parse anywhere; `URLRouter` is `@MainActor`.
+
+## Settings (`UAwakeCore/Settings.swift`)
+`UAwakeSettings` reads and writes every 0.1 setting in `UserDefaults` under the keys in
+`docs/SETTINGS.md`, clamping out-of-range values. `policy` and `endWarning` feed the
+engine through `DefaultSessionEngine.apply(_ settings:)`, which the app calls on every
+defaults change. It also holds the duration presets (add, replace, remove, move, reset).
+`DurationText` is the shared `1h30m` duration syntax used by URLs, presets and, later, the CLI.
+
+**Threading:** a value wrapper over `UserDefaults`; used on the main actor.
+
+## Test support (`UAwakeCore/UAwakeCoreTesting`)
+`FakeClock`, `FakeAssertionProvider` and `DeviceState.test(...)`, shared by every
+package's tests. Never linked into the app.
 
 ## How later releases plug in
 - **1.0 rules:** a `RuleEngine` in Core consumes new monitors (also `AsyncStream`
   protocols in UAwakeSystem) and calls `start`/`stop` with source `.rule` and
   reason `.rule(name:)`. "Guard ended it, stay off" is rule-engine state, read from
-  `endedSessions()`. No contract change.
+  `events()`. No contract change.
 - **1.1 CLI:** an XPC protocol in UAwakeIPC mirrors `SessionEngine` (start, stopAll,
   status). The app's XPC listener hops to the main actor and calls the engine with
   source `.cli`. App Intents do the same with `.shortcut`.

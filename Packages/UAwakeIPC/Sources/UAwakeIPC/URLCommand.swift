@@ -57,8 +57,10 @@ public enum URLCommand: Equatable, Sendable {
         case (.some, .some):
             throw .conflictingParameters
         case (let value?, nil):
-            guard let seconds = parseDuration(value) else { throw .invalidValue(parameter: "duration", value: value) }
-            options.endCondition = .duration(.seconds(seconds))
+            guard let duration = DurationText.parse(value) else {
+                throw .invalidValue(parameter: "duration", value: value)
+            }
+            options.endCondition = .duration(duration)
         case (nil, let value?):
             guard let time = parseClockTime(value) else { throw .invalidValue(parameter: "until", value: value) }
             options.endCondition = .until(time)
@@ -80,15 +82,6 @@ public enum URLCommand: Equatable, Sendable {
             options.reason = reason
         }
         return options
-    }
-
-    /// `1h30m`, `90m`, `45s`: h/m/s parts in that order, each at most once,
-    /// up to six digits each, total above zero.
-    static func parseDuration(_ value: String) -> Int? {
-        guard let match = value.wholeMatch(of: /(?:(\d{1,6})h)?(?:(\d{1,6})m)?(?:(\d{1,6})s)?/) else { return nil }
-        let parts = [match.1, match.2, match.3].map { $0.flatMap { Int($0) } ?? 0 }
-        let total = parts[0] * 3600 + parts[1] * 60 + parts[2]
-        return total > 0 ? total : nil
     }
 
     /// 24-hour `HH:mm`.

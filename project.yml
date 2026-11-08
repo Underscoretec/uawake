@@ -31,10 +31,13 @@ targets:
   uawake:
     type: application
     platform: macOS
-    sources: [App]
+    sources:
+      - path: App
+        excludes: ["Info.plist"]
     settings:
       base:
         PRODUCT_NAME: uawake
+        INFOPLIST_FILE: App/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.underscoretec.uawake
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_LSUIElement: YES

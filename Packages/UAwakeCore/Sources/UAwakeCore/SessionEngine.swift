@@ -12,12 +12,19 @@ public protocol SessionEngine: AnyObject {
 
     /// Guard thresholds and the maximum cap. Setting it recomputes the cap deadline
     /// of active indefinite and battery-level sessions, ending any now past it
-    /// with ``EndCause/maximumCap``.
+    /// with ``EndCause/maximumCap``, and re-runs the guards on the last device state.
     var policy: GuardPolicy { get set }
 
+    /// How long before a `duration` or `until` session ends to emit
+    /// ``SessionEvent/aboutToEnd(_:)``; `nil` turns the warning off. Sessions shorter
+    /// than the lead time are not warned.
+    var endWarning: Duration? { get set }
+
     /// Starts a session and acquires its assertions before returning.
-    /// - Throws: ``SessionEngineError/assertionFailed(code:)`` if IOKit refuses;
-    ///   no session is created in that case.
+    /// - Throws: ``SessionEngineError/wouldEndImmediately(_:)`` if a guard or the
+    ///   session's own battery level already applies to the last device state;
+    ///   ``SessionEngineError/assertionFailed(code:)`` if IOKit refuses.
+    ///   No session is created in either case.
     @discardableResult
     func start(_ request: SessionRequest) throws(SessionEngineError) -> Session
 
@@ -54,9 +61,18 @@ public protocol SessionEngine: AnyObject {
     /// Applies a user-session or sleep/wake event (see ``SessionLifecycleEvent``).
     func handle(_ event: SessionLifecycleEvent)
 
-    /// Each call returns a new stream that yields every session as it ends, with
-    /// its ``EndCause``. Used for guard notifications and, from 1.2, history.
-    func endedSessions() -> AsyncStream<Session>
+    /// Each call returns a new stream of ``SessionEvent``s from now on. Notifications
+    /// and the UI consume it; from 1.2, history too.
+    func events() -> AsyncStream<SessionEvent>
+}
+
+/// What happened to a session. Sessions are snapshots taken at the time of the event.
+public enum SessionEvent: Equatable, Sendable {
+    case started(Session)
+    /// A `duration` or `until` session reached ``SessionEngine/endWarning`` before its deadline.
+    case aboutToEnd(Session)
+    /// The session's state is `.ended(cause)`.
+    case ended(Session)
 }
 
 public enum SessionEngineError: Error, Equatable, Sendable {
@@ -65,6 +81,9 @@ public enum SessionEngineError: Error, Equatable, Sendable {
     case invalidState
     /// Only `duration` and `until` sessions can be extended.
     case notExtendable
+    /// Starting now would end the session at once with this cause (a guard, or
+    /// `.expired` for a battery level already reached).
+    case wouldEndImmediately(EndCause)
     /// IOKit returned a non-success `IOReturn`.
     case assertionFailed(code: Int32)
 }

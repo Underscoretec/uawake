@@ -52,7 +52,7 @@ The menu bar, URL scheme, CLI, Shortcuts and rules engine all create sessions wi
 - **Concurrency**: the session engine is isolated on the main actor; system monitors deliver events as async streams.
 - **Storage**: settings in user defaults, which MDM can manage; rules as JSON in Application Support; session history in a local SQLite database from 1.2.
 - **Inter-process communication**: URL scheme from 0.1; XPC between the app, CLI and helper from 1.1.
-- **Entitlements**: App Sandbox, network client (update checks only), Bluetooth, location and calendars (requested only when a rule needs them), user-selected files (rule import and export).
+- **Entitlements**: App Sandbox, network client (update checks only), Bluetooth, camera (only to detect calls; no video is ever read), location and calendars (requested only when a rule needs them), user-selected files (rule import and export).
 
 ## Release 0.1 — Core
 
@@ -67,11 +67,11 @@ A session is the unit everything works with. Each session has:
 | Source | manual, URL scheme (later: rule, CLI, Shortcuts, MDM) |
 | Reason | Human-readable text, e.g. "Manual: 2 hours" |
 | Mode | Keep system awake (always); keep display awake (optional); keep disk awake (optional) |
-| End condition | Duration, until a clock time, indefinite, until battery reaches X% |
+| End condition | Duration, until a clock time, indefinite, until battery drains to X% (on battery power only) |
 | State | Active, paused, ended (with end cause) |
 
 - Several sessions can run at once. The Mac stays awake while any session is active, using the combined modes of all active sessions.
-- Each session holds its own IOKit assertions, named `uawake: <reason>`, so they show up in `pmset -g assertions`.
+- Each session holds its own IOKit assertions, named `uawake: <reason>`, so they show up in `pmset -g assertions`. Assertion names stay in English; reasons are localised only in the app's UI.
 - Ending a session releases its assertions immediately. If the app quits or crashes, macOS releases them automatically.
 - Every session end records a cause: expired, stopped by user, battery guard, Low Power Mode, thermal guard, maximum cap, app quit.
 
@@ -79,7 +79,7 @@ A session is the unit everything works with. Each session has:
 
 - Presets: 15 min, 30 min, 1 h, 2 h, 5 h, indefinite. Users can add, edit, remove and reorder presets.
 - Custom duration entry and "until" a clock time, e.g. until 18:30.
-- Extend a running session by +15 min or +1 h from the menu or a notification.
+- Extend a running session by +15 min or +1 h from the menu or a notification. Extend applies only to sessions with a deadline (duration or until-time), not to indefinite or battery-level sessions.
 - A default action for the primary click, set by the user (default: indefinite).
 
 ### Menu bar and popover
@@ -99,14 +99,14 @@ All guards are on by default and adjustable in Settings.
 | Battery | End sessions at 20% when on battery | Threshold 5–95%; ignored on AC power |
 | Low Power Mode | End sessions when Low Power Mode turns on | On/off |
 | Thermal | End sessions when the system reports serious or critical thermal state | On/off |
-| Maximum cap | Indefinite sessions end after 24 h | 1–72 h, or off |
+| Maximum cap | Indefinite sessions end after 24 h | 1–72 h, or off; also applies to battery-level sessions; counted from the session start, including paused time |
 
 When a guard ends a session, the user gets a notification naming the guard.
 
 ### System events
 
 - Fast user switching: sessions pause when the user's session becomes inactive and resume with the remaining time when it returns.
-- After the Mac wakes from a forced sleep (lid closed, Apple menu Sleep), active sessions continue with their remaining time.
+- After the Mac wakes from a forced sleep (lid closed, Apple menu Sleep), active sessions continue. Deadlines are wall-clock times, so time spent asleep counts towards a session's duration.
 - Launch at login through `SMAppService`, off by default, offered during first run.
 
 ### URL scheme
@@ -118,7 +118,7 @@ When a guard ends a session, the user gets a notification naming the guard.
 | `uawake://activate?until=18:30` | Session until a clock time |
 | `uawake://activate?display=1&reason=Render` | Optional display mode and reason |
 | `uawake://deactivate` | End all manual and URL sessions |
-| `uawake://toggle` | Toggle the default session |
+| `uawake://toggle` | Stop all manual and URL sessions if any are running, otherwise start the default session; rule and CLI sessions are unaffected |
 
 Invalid URLs change nothing and log a warning; they never leave the UI out of sync with the actual state.
 
@@ -167,9 +167,9 @@ A short welcome sheet: what uawake does, enable notifications, enable launch at 
 | --- | --- | --- | --- |
 | App running | Xcode is open | Workspace app notifications | None |
 | App frontmost | Keynote is in front | Workspace activation notifications | None |
-| Call in progress | Camera or microphone in use | Core Audio and CoreMediaIO device state | None |
+| Call in progress | Camera or microphone in use | Core Audio and CoreMediaIO device state; needs the camera entitlement | None |
 | Audio playing | Any output audio active | Core Audio output device state | None |
-| CPU busy | Above 50% for 1 min | Processor load, sampled every 10 s | None |
+| CPU busy | Above 50% for 1 min | Whole-system processor load, sampled every 10 s; per-process only for apps uawake can already see | None |
 | Network busy | Above 1 MB/s for 1 min | Interface byte counters, sampled every 10 s | None |
 | Power adapter | Connected | Power source notifications | None |
 | External display | Any or a named display connected | Screen change notifications | None |
@@ -223,8 +223,8 @@ These releases are outlined for direction; each gets a full spec before its buil
 
 - **"Why won't my Mac sleep?"** view listing every app and process currently holding a sleep or display assertion, with its name, type and how long it has held it.
 - **Session history**: what kept the Mac awake, the source and reason, start, end and end cause; kept for 30 days, exportable to CSV.
-- **Sleep/wake timeline**: when the Mac actually slept and woke over the last 7 days, with uawake sessions overlaid.
-- Needs an early spike to confirm which system details are readable from the sandbox.
+- **Sleep/wake timeline**: when the Mac actually slept and woke, recorded by uawake from install onward, with uawake sessions overlaid. The CLI can show the full system history, which the sandboxed app cannot read.
+- The sandbox spike confirmed that other apps' assertions are readable from the sandbox; the system sleep/wake log is not.
 
 ### 1.3 — Enterprise
 
@@ -232,7 +232,7 @@ These releases are outlined for direction; each gets a full spec before its buil
 - Admin controls: allowed modes, maximum session length, guard thresholds, allowed rule types, pre-installed rules.
 - **Role presets**: Presenter, Build machine, Kiosk; selectable by users or enforced by MDM.
 - **Import and export** of rules and settings as a file.
-- **Kiosk mode**: auto-start at login, an indefinite session with no cap, auto-recovery after crashes, and a minimal or hidden menu bar presence.
+- **Kiosk mode**: auto-start at login, an indefinite session with no cap, auto-recovery after crashes through a small bundled launch agent (SMAppService with KeepAlive), and a minimal or hidden menu bar presence.
 - Published admin guide with a sample configuration profile.
 
 ### 2.0 — Pro helper (separate, optional download)
@@ -275,7 +275,7 @@ uawake lives in one public repository under Underscore's GitHub organisation, wi
 4. The update is signed for Sparkle and the appcast is updated (stable or beta feed).
 5. A GitHub Release is published with notes; the Homebrew cask is updated.
 
-Signing certificates and notarization credentials are stored as encrypted CI secrets, never in the repository.
+Signing certificates and notarization credentials are stored as encrypted CI secrets, never in the repository. Before each release, SandboxProbe is rerun with a Developer ID-signed build, since ad-hoc signing can behave differently for login items and permission prompts.
 
 ### Community files
 
@@ -312,7 +312,7 @@ The session engine and rules engine are tested hardest, because a keep-awake app
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| Some detection (all processes, other apps' assertions) is limited in the sandbox | Weaker CPU, process or diagnostics features | Technical spike in 0.1 to confirm each API in the sandbox; fall back to a narrower feature or move it to the CLI or helper |
+| Some detection (full process list, system sleep/wake log) is blocked in the sandbox | Weaker CPU, process or diagnostics features | Sandbox spike done (docs/SANDBOX-SPIKE.md); blocked items moved to the CLI or narrowed; SandboxProbe rerun on every macOS beta |
 | macOS changes power or privacy behaviour in a new release | Triggers or guards stop working | Test against each macOS beta from June; keep detection behind protocols so one monitor can be replaced |
 | Lid-closed awake causes overheating | Hardware damage, reputational harm | Ships only in the optional 2.0 helper, with thermal and battery guards that can't be disabled |
 | Scope across five releases outgrows a small team | Slow releases, abandoned features | Releases ship independently; each gets a full spec only when its build is next |
@@ -325,4 +325,4 @@ The session engine and rules engine are tested hardest, because a keep-awake app
 - [ ] Icon and visual identity: commission or design the app icon and menu bar icons.
 - [ ] GitHub organisation name for Underscore's open-source work.
 - [ ] Decide whether AI-assisted contributions are welcome, and say so in CONTRIBUTING.
-- [ ] Run the sandbox spike before 0.1 development starts.
+- [ ] Sandbox spike done. Remaining live checks: fast user switching before 0.1 ships; camera, microphone, audio, USB, display, Bluetooth, Wi-Fi and calendar before 1.0; managed preferences before 1.3.

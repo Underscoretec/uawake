@@ -29,7 +29,7 @@ one session engine. Full spec: `docs/SPEC.md`. Contracts: `docs/CONTRACTS.md`.
 | `App/` | Menu bar app: popover, settings, first run |
 | `Packages/UAwakeCore/` | Session engine, assertions, guards, rules engine, persistence |
 | `Packages/UAwakeSystem/` | System monitors: power, battery, thermal, displays, devices, audio, network, CPU |
-| `Packages/UAwakeIPC/` | URL scheme parsing; XPC protocol from 1.1 |
+| `Packages/UAwakeIPC/` | URL scheme parsing and routing; XPC protocol from 1.1 |
 | `CLI/` | `uawake` CLI (from 1.1) |
 | `Helper/` | Pro helper (from 2.0) |
 | `Config/Version.xcconfig` | Single source of version and build number |
@@ -85,6 +85,14 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
   `SessionLifecycleMonitor` → `SessionEngine.handle(_:)`.
 - Do not name our clock protocol `Clock` — it shadows Swift's `Clock`; it is `SessionClock`.
 - Deadlines are wall-clock `Date`s, so they hold across system sleep.
+- `SystemClock` holds a latency-critical `ProcessInfo` activity while waiting. Without it
+  App Nap delays deadlines by up to ~10 s in the background menu bar app.
+- Settings keys are public API for MDM (`docs/SETTINGS.md`): add keys, never rename them.
+  The UI binds with `@AppStorage(SettingsKey.x.rawValue)`.
+- Guards apply at start too: `start` throws `.wouldEndImmediately(cause)` instead of
+  creating a session that would end at once.
+- `Logger.warning` shows as level `E` in `log show`; os_log maps warning to error.
+- zsh's builtin `log` shadows `/usr/bin/log`, so call `/usr/bin/log show`.
 
 ## Roadmap
 - 0.1 Core: session engine, presets, popover, guards, URL scheme, notifications.

@@ -2,16 +2,16 @@ import Foundation
 import UAwakeCore
 
 /// Manual time. `advance(by:)` resumes every sleeper whose deadline has passed.
-final class FakeClock: SessionClock, @unchecked Sendable {
+public final class FakeClock: SessionClock, @unchecked Sendable {
     private let lock = NSLock()
     private var current: Date
     private var sleepers: [UUID: (deadline: Date, continuation: CheckedContinuation<Void, any Error>)] = [:]
 
-    init(now: Date = Date(timeIntervalSinceReferenceDate: 0)) { current = now }
+    public init(now: Date = Date(timeIntervalSinceReferenceDate: 0)) { current = now }
 
-    var now: Date { lock.withLock { current } }
+    public var now: Date { lock.withLock { current } }
 
-    func advance(by seconds: TimeInterval) {
+    public func advance(by seconds: TimeInterval) {
         let due = lock.withLock {
             current += seconds
             let due = sleepers.filter { $0.value.deadline <= current }
@@ -21,7 +21,7 @@ final class FakeClock: SessionClock, @unchecked Sendable {
         for continuation in due { continuation.resume() }
     }
 
-    func sleep(until deadline: Date) async throws {
+    public func sleep(until deadline: Date) async throws {
         let key = UUID()
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
@@ -40,16 +40,18 @@ final class FakeClock: SessionClock, @unchecked Sendable {
 }
 
 /// Hands out sequential ids and tracks which are live.
-final class FakeAssertionProvider: AssertionProvider, @unchecked Sendable {
+public final class FakeAssertionProvider: AssertionProvider, @unchecked Sendable {
     private let lock = NSLock()
     private var nextID: UInt32 = 1
     private var _live: [UInt32: String] = [:]
-    var failure: Int32?
+    public var failure: Int32?
+
+    public init() {}
 
     /// Live assertion names by id.
-    var live: [UInt32: String] { lock.withLock { _live } }
+    public var live: [UInt32: String] { lock.withLock { _live } }
 
-    func acquire(modes: Set<AwakeMode>, reason: String) throws(SessionEngineError) -> AssertionHandle {
+    public func acquire(modes: Set<AwakeMode>, reason: String) throws(SessionEngineError) -> AssertionHandle {
         let ids: [UInt32]? = lock.withLock {
             if failure != nil { return nil }
             let ids = (0..<UInt32(modes.count)).map { nextID + $0 }
@@ -61,7 +63,7 @@ final class FakeAssertionProvider: AssertionProvider, @unchecked Sendable {
         return AssertionHandle(ids: ids)
     }
 
-    func release(_ handle: AssertionHandle) {
+    public func release(_ handle: AssertionHandle) {
         lock.withLock { for id in handle.ids { _live[id] = nil } }
     }
 }

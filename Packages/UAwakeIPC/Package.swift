@@ -8,6 +8,8 @@ let package = Package(
     dependencies: [.package(path: "../UAwakeCore")],
     targets: [
         .target(name: "UAwakeIPC", dependencies: ["UAwakeCore"]),
-        .testTarget(name: "UAwakeIPCTests", dependencies: ["UAwakeIPC"]),
+        .testTarget(
+            name: "UAwakeIPCTests",
+            dependencies: ["UAwakeIPC", .product(name: "UAwakeCoreTesting", package: "UAwakeCore")]),
     ]
 )

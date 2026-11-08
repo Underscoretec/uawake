@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import UAwakeCoreTesting
 
 @testable import UAwakeCore
 
@@ -10,7 +11,7 @@ struct SessionEngineTests {
     let engine: DefaultSessionEngine
 
     init() {
-        engine = DefaultSessionEngine(assertions: assertions, clock: clock)
+        engine = DefaultSessionEngine(assertions: assertions, clock: clock, guards: DefaultSessionEngine.standardGuards)
     }
 
     func request(_ condition: EndCondition, source: SessionSource = .manual, modes: Set<AwakeMode> = [.system])
@@ -19,13 +20,14 @@ struct SessionEngineTests {
         SessionRequest(source: source, reason: .standard(source, condition), modes: modes, endCondition: condition)
     }
 
-    /// Advances the fake clock and, if a deadline is now due, waits for the engine's timer.
+    /// Advances the fake clock and, if the engine's timer is now due, waits for it.
     func advance(by seconds: TimeInterval) async {
         let timer = engine.timerTask
         clock.advance(by: seconds)
-        let next = engine.sessions.filter { $0.state == .active }.compactMap(\.deadline).min()
-        if let next, next <= clock.now { await timer?.value }
+        if let wake = engine.nextWake, wake <= clock.now { await timer?.value }
     }
+
+    // MARK: Start, stop, events
 
     @Test func startAcquiresNamedAssertionsAndStopReleasesThem() throws {
         let session = try engine.start(request(.duration(.seconds(7200)), modes: [.display]))
@@ -45,16 +47,18 @@ struct SessionEngineTests {
         #expect(engine.sessions.isEmpty)
     }
 
-    @Test func durationSessionExpires() async throws {
-        let ended = engine.endedSessions()
-        try engine.start(request(.duration(.seconds(60))))
+    @Test func eventsReportStartAndExpiry() async throws {
+        var events = engine.events().makeAsyncIterator()
+        let session = try engine.start(request(.duration(.seconds(60))))
         await advance(by: 59)
         #expect(engine.sessions.count == 1)
         await advance(by: 1)
         #expect(engine.sessions.isEmpty)
         #expect(assertions.live.isEmpty)
-        var iterator = ended.makeAsyncIterator()
-        #expect(await iterator.next()?.state == .ended(.expired))
+        #expect(await events.next() == .started(session))
+        var ended = session
+        ended.state = .ended(.expired)
+        #expect(await events.next() == .ended(ended))
     }
 
     @Test func overlappingSessionsEndIndependently() async throws {
@@ -66,13 +70,14 @@ struct SessionEngineTests {
         #expect(engine.sessions.isEmpty)
     }
 
+    // MARK: Maximum cap
+
     @Test func indefiniteSessionEndsAtMaximumCap() async throws {
-        let ended = engine.endedSessions()
         let session = try engine.start(request(.indefinite))
+        var events = engine.events().makeAsyncIterator()
         #expect(session.deadline == clock.now + 24 * 3600)
         await advance(by: 24 * 3600)
-        var iterator = ended.makeAsyncIterator()
-        #expect(await iterator.next()?.state == .ended(.maximumCap))
+        #expect(await events.next()?.endCause == .maximumCap)
     }
 
     @Test func timedSessionsIgnoreTheCap() throws {
@@ -81,8 +86,8 @@ struct SessionEngineTests {
     }
 
     @Test func policyChangeRecomputesCapAndEndsPastSessions() async throws {
-        let ended = engine.endedSessions()
         let session = try engine.start(request(.batteryLevel(30)))
+        var events = engine.events().makeAsyncIterator()
         await advance(by: 2 * 3600)
         engine.policy.maximumCap = .seconds(3 * 3600)
         #expect(engine.sessions.first?.deadline == session.startedAt + 3 * 3600)
@@ -90,9 +95,164 @@ struct SessionEngineTests {
         #expect(engine.sessions.first?.deadline == nil)
         engine.policy.maximumCap = .seconds(3600)
         #expect(engine.sessions.isEmpty)
-        var iterator = ended.makeAsyncIterator()
-        #expect(await iterator.next()?.state == .ended(.maximumCap))
+        #expect(await events.next()?.endCause == .maximumCap)
     }
+
+    @Test func pausedTimeCountsTowardTheCap() async throws {
+        try engine.start(request(.indefinite))
+        engine.handle(.userSessionDidResignActive)
+        #expect(engine.sessions[0].state == .paused(remaining: nil))
+        await advance(by: 25 * 3600)
+        engine.handle(.userSessionDidBecomeActive)
+        #expect(engine.sessions.isEmpty)
+    }
+
+    // MARK: Guards
+
+    @Test func batteryGuardEndsSessionsOnlyOnBatteryAtThreshold() throws {
+        try engine.start(request(.indefinite))
+        engine.apply(.test(battery: 10, source: .ac))
+        engine.apply(.test(battery: 21, source: .battery))
+        #expect(engine.sessions.count == 1)
+        engine.apply(.test(battery: 20, source: .battery))
+        #expect(engine.sessions.isEmpty)
+    }
+
+    @Test func batteryGuardReportsItsCause() async throws {
+        try engine.start(request(.indefinite))
+        var events = engine.events().makeAsyncIterator()
+        engine.apply(.test(battery: 5, source: .battery))
+        #expect(await events.next()?.endCause == .batteryGuard)
+    }
+
+    @Test func batteryGuardOffWhenThresholdIsNil() throws {
+        engine.policy.batteryThreshold = nil
+        try engine.start(request(.indefinite))
+        engine.apply(.test(battery: 1, source: .battery))
+        #expect(engine.sessions.count == 1)
+    }
+
+    @Test func batteryGuardIgnoresMacsWithoutBattery() throws {
+        try engine.start(request(.indefinite))
+        engine.apply(.test(battery: nil, source: .battery))
+        #expect(engine.sessions.count == 1)
+    }
+
+    @Test func lowPowerModeGuard() async throws {
+        try engine.start(request(.indefinite))
+        var events = engine.events().makeAsyncIterator()
+        engine.apply(.test(lowPowerMode: true))
+        #expect(await events.next()?.endCause == .lowPowerMode)
+    }
+
+    @Test(arguments: [ProcessInfo.ThermalState.serious, .critical])
+    func thermalGuardEndsAtSeriousOrCritical(state: ProcessInfo.ThermalState) async throws {
+        try engine.start(request(.indefinite))
+        var events = engine.events().makeAsyncIterator()
+        engine.apply(.test(thermal: .fair))
+        #expect(engine.sessions.count == 1)
+        engine.apply(.test(thermal: state))
+        #expect(await events.next()?.endCause == .thermalGuard)
+    }
+
+    @Test func disabledGuardsDoNothing() throws {
+        engine.policy.endOnLowPowerMode = false
+        engine.policy.endOnThermalPressure = false
+        try engine.start(request(.indefinite))
+        engine.apply(.test(lowPowerMode: true, thermal: .critical))
+        #expect(engine.sessions.count == 1)
+    }
+
+    @Test func guardsEndPausedSessionsToo() throws {
+        try engine.start(request(.duration(.seconds(600))))
+        engine.handle(.userSessionDidResignActive)
+        engine.apply(.test(lowPowerMode: true))
+        #expect(engine.sessions.isEmpty)
+    }
+
+    @Test func enablingAGuardAppliesToRunningSessions() async throws {
+        engine.policy.endOnLowPowerMode = false
+        engine.apply(.test(lowPowerMode: true))
+        try engine.start(request(.indefinite))
+        var events = engine.events().makeAsyncIterator()
+        engine.policy.endOnLowPowerMode = true
+        #expect(await events.next()?.endCause == .lowPowerMode)
+    }
+
+    @Test func raisingBatteryThresholdAppliesToRunningSessions() throws {
+        engine.apply(.test(battery: 30, source: .battery))
+        try engine.start(request(.indefinite))
+        engine.policy.batteryThreshold = 40
+        #expect(engine.sessions.isEmpty)
+    }
+
+    @Test func startIsRefusedWhileAGuardApplies() {
+        engine.apply(.test(thermal: .serious))
+        #expect(throws: SessionEngineError.wouldEndImmediately(.thermalGuard)) {
+            try engine.start(request(.indefinite))
+        }
+        #expect(engine.sessions.isEmpty)
+        #expect(assertions.live.isEmpty)
+    }
+
+    // MARK: Battery-level sessions
+
+    @Test func batteryLevelEndsOnlyOnBatteryAtOrBelowThreshold() async throws {
+        try engine.start(request(.batteryLevel(30)))
+        var events = engine.events().makeAsyncIterator()
+        engine.apply(.test(battery: 10, source: .ac))
+        engine.apply(.test(battery: 31, source: .battery))
+        #expect(engine.sessions.count == 1)
+        engine.apply(.test(battery: 30, source: .battery))
+        #expect(await events.next()?.endCause == .expired)
+    }
+
+    @Test func batteryLevelAlreadyReachedRefusesStart() {
+        engine.apply(.test(battery: 25, source: .battery))
+        #expect(throws: SessionEngineError.wouldEndImmediately(.expired)) {
+            try engine.start(request(.batteryLevel(30)))
+        }
+    }
+
+    // MARK: End warning
+
+    @Test func warnsBeforeATimedSessionEnds() async throws {
+        engine.endWarning = .seconds(300)
+        let session = try engine.start(request(.duration(.seconds(3600))))
+        var events = engine.events().makeAsyncIterator()
+        await advance(by: 3299)
+        await advance(by: 1)
+        #expect(await events.next() == .aboutToEnd(session))
+        await advance(by: 300)
+        #expect(await events.next()?.endCause == .expired)
+    }
+
+    @Test func extendingRearmsTheWarning() async throws {
+        engine.endWarning = .seconds(300)
+        let session = try engine.start(request(.duration(.seconds(600))))
+        var events = engine.events().makeAsyncIterator()
+        await advance(by: 300)
+        #expect(await events.next() == .aboutToEnd(session))
+        try engine.extend(session.id, by: .seconds(900))
+        await advance(by: 900)
+        guard case .aboutToEnd(let warned) = await events.next() else {
+            Issue.record("expected a second warning")
+            return
+        }
+        #expect(warned.deadline == session.startedAt + 1500)
+    }
+
+    @Test func noWarningForShortOrUncappedSessions() async throws {
+        engine.endWarning = .seconds(300)
+        try engine.start(request(.duration(.seconds(120))))
+        try engine.start(request(.indefinite))
+        var events = engine.events().makeAsyncIterator()
+        await advance(by: 120)
+        #expect(await events.next()?.endCause == .expired)
+        #expect(engine.nextWake == clock.now + 24 * 3600 - 120)
+    }
+
+    // MARK: Extend, until, toggle, lifecycle
 
     @Test func extendOnlyTimedSessions() throws {
         let timed = try engine.start(request(.duration(.seconds(60))))
@@ -105,35 +265,28 @@ struct SessionEngineTests {
         #expect(throws: SessionEngineError.sessionNotFound) { try engine.extend(UUID(), by: .seconds(1)) }
     }
 
+    @Test func extendWhilePausedAddsToRemaining() throws {
+        let session = try engine.start(request(.duration(.seconds(600))))
+        try engine.pause(session.id)
+        try engine.extend(session.id, by: .seconds(60))
+        #expect(engine.sessions[0].state == .paused(remaining: .seconds(660)))
+        #expect(throws: SessionEngineError.invalidState) { try engine.pause(session.id) }
+    }
+
     @Test func untilTimeRollsToTomorrowWhenPassed() throws {
         let calendar = Calendar.current
         let now = clock.now
-        let hour = calendar.component(.hour, from: now)
-        let minute = calendar.component(.minute, from: now)
-        let time = try #require(ClockTime(hour: hour, minute: minute))
+        let time = try #require(
+            ClockTime(hour: calendar.component(.hour, from: now), minute: calendar.component(.minute, from: now)))
         let session = try engine.start(request(.until(time)))
         let deadline = try #require(session.deadline)
         #expect(deadline > now && deadline <= now + 24 * 3600)
     }
 
-    @Test func batteryLevelEndsOnlyOnBatteryAtOrBelowThreshold() throws {
-        try engine.start(request(.batteryLevel(30)))
-        engine.apply(
-            DeviceState(batteryLevel: 10, powerSource: .ac, isLowPowerModeEnabled: false, thermalState: .nominal))
-        #expect(engine.sessions.count == 1)
-        engine.apply(
-            DeviceState(batteryLevel: 31, powerSource: .battery, isLowPowerModeEnabled: false, thermalState: .nominal))
-        #expect(engine.sessions.count == 1)
-        engine.apply(
-            DeviceState(batteryLevel: 30, powerSource: .battery, isLowPowerModeEnabled: false, thermalState: .nominal))
-        #expect(engine.sessions.isEmpty)
-    }
-
     @Test func toggleCountsOnlyManualAndURLSessions() throws {
         let rule = try engine.start(
             SessionRequest(source: .rule, reason: .rule(name: "On a call"), endCondition: .indefinite))
-        let started = try engine.toggle(request(.indefinite))
-        #expect(started != nil)
+        #expect(try engine.toggle(request(.indefinite)) != nil)
         #expect(engine.sessions.count == 2)
         try engine.start(request(.duration(.seconds(60)), source: .url))
         #expect(try engine.toggle(request(.indefinite)) == nil)
@@ -165,12 +318,20 @@ struct SessionEngineTests {
 
     @Test func englishReasons() {
         #expect(
-            SessionReason.standard(.manual, .duration(.seconds(5400))).englishDescription == "Manual: 1 hour 30 minutes"
-        )
+            SessionReason.standard(.manual, .duration(.seconds(5400))).englishDescription
+                == "Manual: 1 hour 30 minutes")
         #expect(
             SessionReason.standard(.url, .until(ClockTime(hour: 8, minute: 5)!)).englishDescription
                 == "URL: until 08:05")
         #expect(SessionReason.standard(.manual, .batteryLevel(20)).englishDescription == "Manual: until battery 20%")
+        #expect(SessionReason.rule(name: "On a call").englishDescription == "Rule: On a call")
         #expect(SessionReason.custom("Render").englishDescription == "Render")
+    }
+}
+
+extension SessionEvent {
+    var endCause: EndCause? {
+        if case .ended(let session) = self, case .ended(let cause) = session.state { return cause }
+        return nil
     }
 }

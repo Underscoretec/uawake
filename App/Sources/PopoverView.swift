@@ -3,14 +3,11 @@ import UAwakeCore
 import os
 
 struct PopoverView: View {
-    let engine: DefaultSessionEngine
+    let model: AppModel
+
+    private var engine: DefaultSessionEngine { model.engine }
 
     private static let logger = Logger(subsystem: "com.underscoretec.uawake", category: "app")
-    private static let defaultRequest = SessionRequest(
-        source: .manual,
-        reason: .standard(.manual, .indefinite),
-        endCondition: .indefinite
-    )
 
     private var isOn: Bool {
         engine.sessions.contains { $0.source == .manual || $0.source == .url }
@@ -40,7 +37,7 @@ struct PopoverView: View {
 
     private func toggle() {
         do {
-            try engine.toggle(Self.defaultRequest)
+            try engine.toggle(model.defaultRequest)
         } catch {
             Self.logger.error("Toggle failed: \(String(describing: error), privacy: .public)")
         }
