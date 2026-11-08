@@ -7,7 +7,7 @@ awake, for as long as you need, and uawake tells you what is keeping it awake an
 guards stop sessions at low battery, in Low Power Mode, when your Mac gets too warm, or after a
 maximum duration.
 
-**Status:** 0.1.0, first public alpha (not yet released). MIT licence.
+**Status:** 0.1.0 alpha, in internal testing ([Testing the alpha](#testing-the-alpha)). MIT licence.
 
 <p>
   <img src="docs/design/screenshots/popover-one-session-light.png" width="300" alt="The uawake popover keeping the Mac awake for one hour, in light mode">
@@ -28,13 +28,29 @@ maximum duration.
 
 Requires macOS 14 Sonoma or later, on Apple silicon or Intel.
 
+## Testing the alpha
+
+Alpha builds are unsigned and not notarized, so macOS blocks them the first time.
+
+1. Download the DMG from [GitHub Releases](https://github.com/Underscoretec/uawake/releases).
+2. Open it and drag uawake to Applications.
+3. Open uawake once. macOS says it can't verify the app; click Done.
+4. Open System Settings › Privacy & Security, scroll down, click **Open Anyway** next to the
+   uawake message, and confirm.
+
+Each new alpha build has a different signature, so macOS may ask for permissions (such as
+notifications or launch at login) again after you install it. Updates are manual until signed
+releases arrive: download the new DMG and replace the app in Applications.
+
+Report bugs and ideas in [Issues](https://github.com/Underscoretec/uawake/issues/new/choose).
+
 ## Install from source
 
 Signed downloads and a Homebrew cask arrive with the first public release. Until then:
 
 ```sh
 brew install xcodegen          # Xcode 26 or later is also required
-git clone <repository URL> uawake && cd uawake   # TODO: URL once the GitHub organisation is decided
+git clone https://github.com/Underscoretec/uawake.git && cd uawake
 make build                     # or: make release (an unsigned DMG for local testing)
 open build/DerivedData/Build/Products/Debug/uawake.app
 ```
@@ -71,8 +87,7 @@ for the product spec and [docs/CONTRACTS.md](docs/CONTRACTS.md) for the core con
 
 ## Credits
 
-Created by Abhijit Roy · Underscore Technology. Inspired by KeepingYouAwake; uawake is an
-independent, clean implementation that shares no code with it.
+Created by Abhijit Roy · Underscore Technology.
 
 ## Licence
 
