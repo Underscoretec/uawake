@@ -63,43 +63,13 @@ final class NotificationController: NSObject, UNUserNotificationCenterDelegate {
             post(content, id: Self.warningID(session.id))
         case .ended(let session):
             center.removeDeliveredNotifications(withIdentifiers: [Self.warningID(session.id)])
-            guard case .ended(let cause) = session.state, let text = guardText(cause) else { return }
+            guard case .ended(let cause) = session.state, let text = cause.guardText(settings: settings) else { return }
             let content = UNMutableNotificationContent()
             content.title = text.title
             content.body = String(
                 localized: "\(session.reason.localizedDescription) ended. \(text.detail)",
                 comment: "Notification body: reason, then why the guard ended it")
             post(content, id: "ended-\(session.id.uuidString)")
-        }
-    }
-
-    func guardText(_ cause: EndCause) -> (title: String, detail: String)? {
-        switch cause {
-        case .batteryGuard:
-            (
-                String(localized: "Battery guard", comment: "Notification title"),
-                String(
-                    localized: "The battery reached the \(settings.batteryGuardThreshold)% limit.",
-                    comment: "Notification detail")
-            )
-        case .lowPowerMode:
-            (
-                String(localized: "Low Power Mode", comment: "Notification title"),
-                String(localized: "Low Power Mode turned on.", comment: "Notification detail")
-            )
-        case .thermalGuard:
-            (
-                String(localized: "Thermal guard", comment: "Notification title"),
-                String(localized: "Your Mac got too warm.", comment: "Notification detail")
-            )
-        case .maximumCap:
-            (
-                String(localized: "Maximum duration", comment: "Notification title"),
-                String(
-                    localized: "It reached the \(settings.maximumCapHours)-hour limit.", comment: "Notification detail")
-            )
-        case .expired, .stoppedByUser, .appQuit:
-            nil
         }
     }
 

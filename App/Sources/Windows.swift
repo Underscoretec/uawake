@@ -6,12 +6,18 @@ import SwiftUI
 class HostingWindowController {
     private(set) var window: NSWindow?
 
-    func show<Content: View>(title: String, identifier: String, content: () -> Content) {
+    func show<Content: View>(
+        title: String, identifier: String, resizable: Bool = false, content: () -> Content
+    ) {
         if window == nil {
             let window = NSWindow(contentViewController: NSHostingController(rootView: content()))
             window.title = title
             window.identifier = NSUserInterfaceItemIdentifier(identifier)
-            window.styleMask = [.titled, .closable]
+            window.styleMask =
+                resizable
+                ? [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView] : [.titled, .closable]
+            window.titlebarAppearsTransparent = resizable
+            window.setContentSize(window.contentView?.fittingSize ?? .zero)
             window.isReleasedWhenClosed = false
             window.center()
             self.window = window
@@ -22,24 +28,18 @@ class HostingWindowController {
 }
 
 @MainActor
-@Observable
-final class SettingsSelection {
-    var tab: SettingsTab = .general
-}
-
-@MainActor
-final class SettingsWindowController: HostingWindowController {
+final class MainWindowController: HostingWindowController {
     private let model: AppModel
-    private let selection = SettingsSelection()
+    private let selection = MainSelection()
 
     init(model: AppModel) {
         self.model = model
     }
 
-    func show(tab: SettingsTab?) {
-        if let tab { selection.tab = tab }
-        show(title: String(localized: "uawake Settings", comment: "Settings window title"), identifier: "Settings") {
-            SettingsView(model: model, selection: selection).defaultAppStorage(model.settings.defaults)
+    func show(section: MainSection?) {
+        if let section { selection.section = section }
+        show(title: String(localized: "uawake", comment: "Main window title"), identifier: "Main", resizable: true) {
+            MainWindowView(model: model, selection: selection).defaultAppStorage(model.settings.defaults)
         }
     }
 }

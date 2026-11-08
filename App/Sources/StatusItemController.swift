@@ -11,10 +11,11 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     private let popover = NSPopover()
     private var ticker: Timer?
 
-    init(model: AppModel) {
+    init(model: AppModel, keepsPopoverOpen: Bool = false) {
         self.model = model
         super.init()
-        popover.behavior = .transient
+        popover.behavior = keepsPopoverOpen ? .applicationDefined : .transient
+        popover.appearance = NSApplication.shared.appearance
         popover.delegate = self
         popover.contentViewController = NSHostingController(
             rootView: PopoverView(model: model.popover).defaultAppStorage(model.settings.defaults))
@@ -22,7 +23,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             button.target = self
             button.action = #selector(clicked)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            button.imagePosition = .imageLeading
+            button.imagePosition = .imageOnly
             button.setAccessibilityHelp(
                 String(
                     localized: "Click to turn uawake on or off. Option-click or right-click for options.",
@@ -78,16 +79,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         guard let button = statusItem.button else { return }
         let viewModel = model.popover
         let active = viewModel.isAwake
-        let symbols = Self.symbols(model.settings.iconStyle)
-        let image = NSImage(
-            systemSymbolName: active ? symbols.active : symbols.inactive, accessibilityDescription: nil)
-        image?.isTemplate = true  // Follows light, dark and tinted menu bars.
-        button.image = image
-
         let countdown = model.settings.showsCountdown ? viewModel.countdown(now: Date()) : nil
-        button.attributedTitle = NSAttributedString(
-            string: countdown.map { " " + $0 } ?? "",
-            attributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)])
+        button.image = Self.statusImage(style: model.settings.iconStyle, active: active, countdown: countdown)
         button.setAccessibilityLabel(viewModel.statusAccessibilityLabel(now: Date()))
 
         let needsTicker = countdown != nil
@@ -102,6 +95,38 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             ticker?.invalidate()
             ticker = nil
         }
+    }
+
+    /// The icon alone when idle (or the countdown is off); icon plus time left in a
+    /// compact pill while a timed session runs. A template image, so the menu bar tints it
+    /// for light, dark and wallpaper-tinted bars.
+    static func statusImage(style: IconStyle, active: Bool, countdown: String?) -> NSImage {
+        let symbols = symbols(style)
+        let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+        let symbol =
+            NSImage(systemSymbolName: active ? symbols.active : symbols.inactive, accessibilityDescription: nil)?
+            .withSymbolConfiguration(configuration) ?? NSImage()
+        guard let countdown else {
+            symbol.isTemplate = true
+            return symbol
+        }
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
+        let text = NSAttributedString(string: countdown, attributes: [.font: font, .foregroundColor: NSColor.black])
+        let textSize = text.size()
+        let height: CGFloat = 18
+        let symbolSize = NSSize(width: symbol.size.width * 0.86, height: symbol.size.height * 0.86)
+        let size = NSSize(width: 7 + symbolSize.width + 4 + ceil(textSize.width) + 8, height: height)
+        let image = NSImage(size: size, flipped: false) { rect in
+            NSColor.black.withAlphaComponent(0.22).setFill()
+            NSBezierPath(roundedRect: rect, xRadius: height / 2, yRadius: height / 2).fill()
+            symbol.draw(
+                in: NSRect(
+                    x: 7, y: (height - symbolSize.height) / 2, width: symbolSize.width, height: symbolSize.height))
+            text.draw(at: NSPoint(x: 7 + symbolSize.width + 4, y: (height - textSize.height) / 2))
+            return true
+        }
+        image.isTemplate = true
+        return image
     }
 
     static func symbols(_ style: IconStyle) -> (active: String, inactive: String) {

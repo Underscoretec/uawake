@@ -1,34 +1,7 @@
 import SwiftUI
 import UAwakeCore
 
-struct SettingsView: View {
-    let model: AppModel
-    @Bindable var selection: SettingsSelection
-
-    var body: some View {
-        TabView(selection: $selection.tab) {
-            GeneralSettingsView(model: model)
-                .tabItem { Label("General", systemImage: "gearshape") }
-                .tag(SettingsTab.general)
-            DurationsSettingsView(settings: model.settings)
-                .tabItem { Label("Durations", systemImage: "timer") }
-                .tag(SettingsTab.durations)
-            SafetySettingsView()
-                .tabItem { Label("Safety", systemImage: "shield") }
-                .tag(SettingsTab.safety)
-            AppearanceSettingsView()
-                .tabItem { Label("Appearance", systemImage: "paintbrush") }
-                .tag(SettingsTab.appearance)
-            AboutView()
-                .tabItem { Label("About", systemImage: "info.circle") }
-                .tag(SettingsTab.about)
-        }
-        .frame(width: 500)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-}
-
-private struct GeneralSettingsView: View {
+struct GeneralSettingsView: View {
     let model: AppModel
     @State private var launchesAtLogin = false
     @State private var shortcut: GlobalShortcut?
@@ -64,7 +37,7 @@ private struct GeneralSettingsView: View {
     }
 }
 
-private struct DurationsSettingsView: View {
+struct DurationsSettingsView: View {
     let settings: UAwakeSettings
     @State private var presets: [EndCondition] = []
     @State private var text = ""
@@ -166,7 +139,7 @@ private struct DurationsSettingsView: View {
     }
 }
 
-private struct SafetySettingsView: View {
+struct SafetySettingsView: View {
     @AppStorage(SettingsKey.batteryGuardEnabled.rawValue) private var batteryEnabled = true
     @AppStorage(SettingsKey.batteryGuardThreshold.rawValue) private var batteryThreshold = 20
     @AppStorage(SettingsKey.lowPowerModeGuardEnabled.rawValue) private var lowPowerMode = true
@@ -211,7 +184,7 @@ private struct SafetySettingsView: View {
     }
 }
 
-private struct AppearanceSettingsView: View {
+struct AppearanceSettingsView: View {
     @AppStorage(SettingsKey.iconStyle.rawValue) private var iconStyle = IconStyle.cup.rawValue
     @AppStorage(SettingsKey.showsCountdown.rawValue) private var showsCountdown = false
 
@@ -230,7 +203,7 @@ private struct AppearanceSettingsView: View {
     }
 }
 
-private struct AboutView: View {
+struct AboutView: View {
     var body: some View {
         let info = Bundle.main.infoDictionary
         let version = info?["CFBundleShortVersionString"] as? String ?? ""

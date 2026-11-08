@@ -71,6 +71,8 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
 - App: `build/DerivedData/Build/Products/Debug/uawake.app`. Check with `pmset -g assertions | grep uawake`.
 - Local builds are ad-hoc signed (`CODE_SIGN_IDENTITY "-"`); Debug omits the hardened runtime, Release has it.
 - `make uitest` runs the UI tests. They need UI automation allowed for Xcode's runner.
+- `make screenshots` regenerates `docs/design/screenshots/` (light and dark).
+  `docs/design/reference/` is third-party reference material: gitignored, never commit it.
 - `make strings` syncs `Localizable.xcstrings` with every string the compiler extracted.
   Run it after any UI text change.
 
@@ -91,9 +93,14 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
   before a deadline. Without it App Nap delays deadlines by up to ~10 s.
 - The app uses the AppKit lifecycle (`main.swift`, `AppDelegate`), not a SwiftUI `App`:
   `NSStatusItem` + `NSPopover` because `MenuBarExtra` can't tell primary from secondary clicks.
-  Windows host SwiftUI via `HostingWindowController`.
+  Windows host SwiftUI via `HostingWindowController`. Settings live in the sidebar main
+  window (`MainWindowView`, `MainSection`); add Rules/Diagnostics as sidebar sections.
+- Design: shared components in `DesignSystem.swift` (cards, pills, icon tiles, chips,
+  banners). Colour always paired with an icon and text: green awake, amber near a limit,
+  red stopped by a guard.
 - `-UITesting` launches with throwaway settings, no welcome window, and the popover
-  content in a normal window. When hosting unit tests the app shows nothing.
+  content in a stand-in panel (the real status item may not be placed on a crowded test
+  Mac). `-UITestDeviceState battery|lowPower` fixes the power state. Unit-test hosting shows nothing.
 - Settings keys are public API for MDM (`docs/SETTINGS.md`): add keys, never rename them.
   The UI binds with `@AppStorage(SettingsKey.x.rawValue)`.
 - Guards apply at start too: `start` throws `.wouldEndImmediately(cause)` instead of

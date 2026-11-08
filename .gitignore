@@ -10,3 +10,4 @@ build/
 .build/
 .swiftpm/
 Package.resolved
+docs/design/reference/

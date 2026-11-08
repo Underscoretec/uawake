@@ -1,7 +1,8 @@
 import XCTest
 
-/// Drives the popover's content in a test window and the Settings window. The app runs
-/// with `-UITesting`: throwaway settings and no welcome window.
+/// Drives the real popover (kept open with `-UITesting`) and the main window. The app
+/// runs with throwaway settings and no welcome window. Every test ends by terminating
+/// the app, which releases its power assertions even when an assertion fails.
 final class AppUITests: XCTestCase {
     private var app: XCUIApplication!
 
@@ -16,65 +17,76 @@ final class AppUITests: XCTestCase {
 
     @MainActor
     func testToggleStartsAndStopsTheDefaultSession() throws {
-        app.launchArguments = ["-UITesting"]
+        app.launchArguments = ["-UITesting", "-UITestDeviceState", "battery"]
         app.launch()
-        let window = app.windows["Popover"]
+        let popover = app.windows["Popover"]
+        XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
+        XCTAssertTrue(popover.text("Your Mac can sleep normally").waitForExistence(timeout: 3))
+        popover.labeled("Keep awake").click()
+        XCTAssertTrue(popover.text("Manual: indefinite").waitForExistence(timeout: 2))
+        XCTAssertTrue(popover.text("Keeping your Mac awake").exists)
+        XCTAssertTrue(popover.labeled("Safety guards are on").exists)
+        popover.labeled("Keep awake").click()
+        XCTAssertTrue(popover.text("Your Mac can sleep normally").waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func testPresetChipExtendAndStop() throws {
+        app.launchArguments = ["-UITesting", "-UITestDeviceState", "battery"]
+        app.launch()
+        let popover = app.windows["Popover"]
+        XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
+        popover.buttons["Keep awake: 15 min"].click()
+        XCTAssertTrue(popover.text("Manual: 15 minutes").waitForExistence(timeout: 2))
+        let extend = popover.buttons["Extend Manual: 15 minutes by 15 minutes"]
+        XCTAssertTrue(extend.exists)
+        extend.click()
+        XCTAssertTrue(popover.text("29:").waitForExistence(timeout: 2))
+        popover.buttons["Stop Manual: 15 minutes"].click()
+        XCTAssertTrue(popover.text("Your Mac can sleep normally").waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func testRefusalBannerOpensSafety() throws {
+        app.launchArguments = ["-UITesting", "-UITestDeviceState", "lowPower"]
+        app.launch()
+        let popover = app.windows["Popover"]
+        XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
+        popover.labeled("Keep awake").click()
+        XCTAssertTrue(popover.text("Low Power Mode is on.").waitForExistence(timeout: 2))
+        popover.buttons["Open Safety Settings"].click()
+        let window = app.windows["Main"]
         XCTAssertTrue(window.waitForExistence(timeout: 5))
-        XCTAssertTrue(window.text("No active sessions").exists)
-        window.switches.firstMatch.click()
-        XCTAssertTrue(window.text("Manual: indefinite").waitForExistence(timeout: 2))
-        attach("Popover, session on")
-        window.switches.firstMatch.click()
-        XCTAssertTrue(window.text("No active sessions").waitForExistence(timeout: 2))
+        XCTAssertTrue(window.text("Stop when Low Power Mode turns on").waitForExistence(timeout: 2))
     }
 
     @MainActor
-    func testPresetChipAndExtend() throws {
-        app.launchArguments = ["-UITesting"]
+    func testMainWindowSections() throws {
+        app.launchArguments = ["-UITesting", "-UITestMainWindow", "-UITestDeviceState", "battery"]
         app.launch()
-        let window = app.windows["Popover"]
+        let window = app.windows["Main"]
         XCTAssertTrue(window.waitForExistence(timeout: 5))
-        window.buttons["Keep awake: 15 min"].click()
-        XCTAssertTrue(window.text("Manual: 15 minutes").waitForExistence(timeout: 2))
-        XCTAssertTrue(window.buttons["Extend Manual: 15 minutes by 15 minutes"].exists)
-        attach("Popover, timed session")
-        window.buttons["Stop Manual: 15 minutes"].click()
-        XCTAssertTrue(window.text("No active sessions").waitForExistence(timeout: 2))
-    }
-
-    @MainActor
-    func testSettingsTabs() throws {
-        app.launchArguments = ["-UITesting", "-UITestSettings"]
-        app.launch()
-        let settings = app.windows["uawake Settings"]
-        XCTAssertTrue(settings.waitForExistence(timeout: 5))
-        XCTAssertTrue(settings.buttons["Record a shortcut"].exists)
-        attach("Settings, General")
-        for tab in ["Durations", "Safety", "Appearance", "About"] {
-            settings.tabs[tab].click()
-            attach("Settings, \(tab)")
-        }
-        settings.tabs["Safety"].click()
-        XCTAssertTrue(settings.text("Stop when Low Power Mode turns on").exists)
-        settings.tabs["About"].click()
-        XCTAssertTrue(settings.text("Created by Abhijit Roy · Underscore Technology").exists)
-    }
-
-    @MainActor
-    private func attach(_ name: String) {
-        let attachment = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
-        attachment.name = name
-        attachment.lifetime = .keepAlways
-        add(attachment)
+        XCTAssertTrue(window.text("What keeps your Mac awake right now.").exists)
+        window.text("General").click()
+        XCTAssertTrue(window.buttons["Record a shortcut"].waitForExistence(timeout: 2))
+        window.text("Safety").click()
+        XCTAssertTrue(window.text("Stop when Low Power Mode turns on").waitForExistence(timeout: 2))
+        window.text("About").click()
+        XCTAssertTrue(window.text("Created by Abhijit Roy · Underscore Technology").waitForExistence(timeout: 2))
     }
 }
 
 extension XCUIElement {
-    /// Any descendant whose label or value starts with `text` (SwiftUI text exposes its
-    /// string as the value; combined rows join several strings)
+    /// Any descendant whose label or value contains `text` (SwiftUI text exposes its
+    /// string as the value; combined elements join several strings).
     func text(_ text: String) -> XCUIElement {
-        descendants(matching: .any).matching(
-            NSPredicate(format: "label BEGINSWITH %@ OR value BEGINSWITH %@", text, text)
-        ).firstMatch
+        descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", text, text)).element(boundBy: 0)
+    }
+
+    /// The first descendant with exactly this accessibility label. (`firstMatch` misses
+    /// elements in the borderless popover stand-in, so these use `element(boundBy: 0)`.)
+    func labeled(_ label: String) -> XCUIElement {
+        descendants(matching: .any).matching(NSPredicate(format: "label == %@", label)).element(boundBy: 0)
     }
 }

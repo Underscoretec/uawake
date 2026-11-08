@@ -20,7 +20,8 @@ final class AppModel {
     private(set) var shortcutProblem: String?
 
     /// `uiTesting` keeps settings in a throwaway domain, so UI tests never touch real settings.
-    init(uiTesting: Bool = false) {
+    /// `fixedDeviceState` replaces the real power monitor (UI tests and screenshots).
+    init(uiTesting: Bool = false, fixedDeviceState: DeviceState? = nil) {
         let defaults: UserDefaults
         if uiTesting, let testDefaults = UserDefaults(suiteName: "com.underscoretec.uawake.uitests") {
             testDefaults.removePersistentDomain(forName: "com.underscoretec.uawake.uitests")
@@ -41,11 +42,20 @@ final class AppModel {
         popover = PopoverViewModel(engine: engine, settings: settings)
         notifications = NotificationController(engine: engine, settings: settings)
 
-        let deviceState = SystemDeviceStateMonitor()
+        if let fixedDeviceState {
+            engine.apply(fixedDeviceState)
+        } else {
+            let deviceState = SystemDeviceStateMonitor()
+            Task { for await state in deviceState.updates() { engine.apply(state) } }
+        }
         let lifecycle = SystemSessionLifecycleMonitor()
-        Task { for await state in deviceState.updates() { engine.apply(state) } }
         Task { for await event in lifecycle.events() { engine.handle(event) } }
-        Task { [notifications] in for await event in engine.events() { notifications.handle(event) } }
+        Task { [notifications, popover] in
+            for await event in engine.events() {
+                notifications.handle(event)
+                popover.handle(event)
+            }
+        }
         // Posted for every in-process change, including @AppStorage writes from Settings.
         Task { [weak self] in
             for await _ in NotificationCenter.default.notifications(named: UserDefaults.didChangeNotification) {

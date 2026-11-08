@@ -2,7 +2,7 @@ PACKAGES := Packages/UAwakeCore Packages/UAwakeSystem Packages/UAwakeIPC
 DERIVED := build/DerivedData
 XCODEBUILD := xcodebuild -project uawake.xcodeproj -scheme uawake -destination 'platform=macOS,arch=$(shell uname -m)' -derivedDataPath $(DERIVED) -quiet
 
-.PHONY: generate build probe test uitest strings lint format clean
+.PHONY: generate build probe test uitest screenshots strings lint format clean
 
 generate:
 	xcodegen generate --quiet
@@ -19,7 +19,13 @@ test: generate
 	$(XCODEBUILD) test
 
 uitest: generate
-	xcodebuild -project uawake.xcodeproj -scheme uawakeUITests -destination 'platform=macOS,arch=$(shell uname -m)' -derivedDataPath $(DERIVED) -quiet test
+	xcodebuild -project uawake.xcodeproj -scheme uawakeUITests -destination 'platform=macOS,arch=$(shell uname -m)' -derivedDataPath $(DERIVED) -quiet test -skip-testing:uawakeUITests/ScreenshotTests
+
+# Design screenshots, light and dark, into docs/design/screenshots/.
+screenshots: generate
+	rm -rf build/screenshots.xcresult
+	xcodebuild -project uawake.xcodeproj -scheme uawakeUITests -destination 'platform=macOS,arch=$(shell uname -m)' -derivedDataPath $(DERIVED) -resultBundlePath build/screenshots.xcresult -quiet test -only-testing:uawakeUITests/ScreenshotTests
+	python3 -I scripts/export-screenshots.py build/screenshots.xcresult docs/design/screenshots
 
 # Adds every string the compiler extracted from the app to Localizable.xcstrings
 # (Xcode does this when building in the IDE; this does it for command-line builds).

@@ -2,19 +2,85 @@ import Foundation
 import Observation
 import UAwakeCore
 
-enum SettingsTab: String, CaseIterable, Hashable {
-    case general, durations, safety, appearance, about
+/// Sections of the main window's sidebar. Rules (1.0) and Diagnostics (1.2) join later.
+enum MainSection: String, CaseIterable, Hashable, Identifiable {
+    case overview, durations, safety, appearance, general, about
+    var id: Self { self }
 }
 
-/// Why a start was refused, and which settings tab can change it.
+/// Why a start was refused, and which main-window section can change it.
 struct Refusal: Equatable {
     let message: String
-    let settingsTab: SettingsTab?
+    let section: MainSection?
+}
+
+/// A dismissible, tinted card in the popover and Overview.
+struct Banner: Identifiable, Equatable {
+    enum Kind: Equatable {
+        case refusal
+        case guardStop(Session.ID)
+    }
+
+    let kind: Kind
+    let tone: Tone
+    let symbol: String
+    let title: String
+    let message: String
+    let section: MainSection?
+
+    var id: String {
+        switch kind {
+        case .refusal: "refusal"
+        case .guardStop(let id): id.uuidString
+        }
+    }
+}
+
+/// What the colour of a chip, banner or hero means. Always paired with an icon and text.
+enum Tone: Equatable {
+    /// Informational.
+    case neutral
+    /// Awake, or guards on and clear.
+    case good
+    /// Ending soon, or a guard near its limit.
+    case caution
+    /// Stopped by a guard, or a guard blocking sessions.
+    case critical
+}
+
+/// The popover's main state, big and bold.
+struct Hero: Equatable {
+    enum Kind: Equatable {
+        /// Nothing keeps the Mac awake.
+        case idle
+        /// Every active session has its own end: a countdown to the last one.
+        case timed
+        /// An indefinite or battery-level session runs.
+        case indefinite
+    }
+
+    let kind: Kind
+    /// The countdown for `.timed`; `nil` otherwise.
+    let countdown: String?
+    /// "until 18:30" for `.timed`, "Indefinite" for `.indefinite`.
+    let caption: String
+    /// Elapsed fraction of the longest-running timed session, 0–1.
+    let progress: Double?
+    let isEndingSoon: Bool
+}
+
+struct StatusChip: Identifiable, Equatable {
+    let id: String
+    let symbol: String
+    let text: String
+    let tone: Tone
+    let accessibilityLabel: String
 }
 
 struct SessionRow: Identifiable, Equatable {
     let id: Session.ID
     let title: String
+    let source: SessionSource
     let sourceName: String
     /// The session's own end (duration or until-time); `nil` for indefinite and battery-level.
     let deadline: Date?
@@ -25,6 +91,7 @@ struct SessionRow: Identifiable, Equatable {
     init(_ session: Session) {
         id = session.id
         title = session.reason.localizedDescription
+        source = session.source
         sourceName = session.source.localizedName
         isPaused = session.state != .active
         canExtend = session.endCondition.hasOwnDeadline
@@ -42,7 +109,7 @@ final class PopoverViewModel {
     private(set) var refusal: Refusal?
     var untilTime: Date
 
-    @ObservationIgnored var openSettings: (SettingsTab?) -> Void = { _ in }
+    @ObservationIgnored var openMainWindow: (MainSection?) -> Void = { _ in }
     @ObservationIgnored var showPopover: () -> Void = {}
 
     init(engine: DefaultSessionEngine, settings: UAwakeSettings, now: Date = Date()) {
@@ -104,6 +171,200 @@ final class PopoverViewModel {
         return String(localized: "uawake: keeping your Mac awake", comment: "Menu bar icon, VoiceOver")
     }
 
+    // MARK: Hero
+
+    func hero(now: Date) -> Hero {
+        let active = engine.sessions.filter { $0.state == .active }
+        guard !active.isEmpty else {
+            return Hero(kind: .idle, countdown: nil, caption: "", progress: nil, isEndingSoon: false)
+        }
+        guard let countdown = countdown(now: now),
+            let last = active.max(by: { ($0.deadline ?? .distantPast) < ($1.deadline ?? .distantPast) }),
+            let deadline = last.deadline
+        else {
+            return Hero(
+                kind: .indefinite, countdown: nil,
+                caption: String(localized: "Indefinite", comment: "Preset chip: no end time"), progress: nil,
+                isEndingSoon: false)
+        }
+        let total = deadline.timeIntervalSince(last.startedAt)
+        let progress = total > 0 ? min(1, max(0, now.timeIntervalSince(last.startedAt) / total)) : 1
+        let time = deadline.formatted(date: .omitted, time: .shortened)
+        return Hero(
+            kind: .timed, countdown: countdown,
+            caption: String(localized: "until \(time)", comment: "Session end; the argument is a time of day"),
+            progress: progress, isEndingSoon: isEndingSoon(deadline, now: now))
+    }
+
+    /// Within the end-warning lead time (5 min when the warning is off).
+    func isEndingSoon(_ deadline: Date, now: Date) -> Bool {
+        deadline.timeIntervalSince(now) <= Double((settings.endWarning ?? .seconds(300)).components.seconds)
+    }
+
+    // MARK: Banners
+
+    private(set) var guardStops: [Banner] = []
+
+    /// The refusal (if any) first, then the most recent guard stops.
+    var banners: [Banner] {
+        let refusalBanner = refusal.map {
+            Banner(
+                kind: .refusal, tone: .caution, symbol: "exclamationmark.triangle.fill",
+                title: String(localized: "Can't keep your Mac awake", comment: "Banner title: start refused"),
+                message: $0.message, section: $0.section)
+        }
+        return (refusalBanner.map { [$0] } ?? []) + guardStops
+    }
+
+    func dismiss(_ banner: Banner) {
+        switch banner.kind {
+        case .refusal: refusal = nil
+        case .guardStop(let id): guardStops.removeAll { $0.kind == .guardStop(id) }
+        }
+    }
+
+    func open(_ banner: Banner) {
+        openMainWindow(banner.section)
+    }
+
+    // MARK: Session events
+
+    /// Today's ended sessions, for "Kept awake today". In memory only; history comes in 1.2.
+    private var endedIntervals: [DateInterval] = []
+
+    func handle(_ event: SessionEvent, now: Date = Date()) {
+        guard case .ended(let session) = event else { return }
+        if now > session.startedAt { endedIntervals.append(DateInterval(start: session.startedAt, end: now)) }
+        guard case .ended(let cause) = session.state, let text = cause.guardText(settings: settings) else { return }
+        let banner = Banner(
+            kind: .guardStop(session.id), tone: .critical, symbol: "stop.circle.fill",
+            title: String(localized: "Stopped by \(text.title)", comment: "Banner title: a guard ended a session"),
+            message: String(
+                localized: "\(session.reason.localizedDescription) ended. \(text.detail)",
+                comment: "Notification body: reason, then why the guard ended it"),
+            section: .safety)
+        guardStops = Array(([banner] + guardStops).prefix(3))
+    }
+
+    /// Time today when at least one session was keeping the Mac awake (overlaps count once).
+    /// Approximate: an ended session counts from its start, including any paused time.
+    func keptAwakeToday(now: Date, calendar: Calendar = .current) -> Duration {
+        let dayStart = calendar.startOfDay(for: now)
+        let live = engine.sessions.filter { $0.state == .active && $0.startedAt < now }
+            .map { DateInterval(start: $0.startedAt, end: now) }
+        let clipped = (endedIntervals + live).compactMap { interval -> DateInterval? in
+            let start = max(interval.start, dayStart)
+            let end = min(interval.end, now)
+            return start < end ? DateInterval(start: start, end: end) : nil
+        }
+        var total: TimeInterval = 0
+        var current: DateInterval?
+        for interval in clipped.sorted(by: { $0.start < $1.start }) {
+            if let open = current, interval.start <= open.end {
+                current = DateInterval(start: open.start, end: max(open.end, interval.end))
+            } else {
+                total += current?.duration ?? 0
+                current = interval
+            }
+        }
+        total += current?.duration ?? 0
+        return .seconds(Int(total))
+    }
+
+    /// "3h 20m", "45m", "0m".
+    static func keptAwakeText(_ duration: Duration) -> String {
+        duration.formatted(
+            .units(allowed: [.hours, .minutes], width: .narrow, zeroValueUnits: .hide, fractionalPart: .hide))
+    }
+
+    // MARK: Status strip
+
+    /// Battery level, power source and guard state. Empty until the first device-state reading.
+    var statusChips: [StatusChip] {
+        guard let state = engine.deviceState else { return [] }
+        var chips: [StatusChip] = []
+        let policy = settings.policy
+        if let level = state.batteryLevel {
+            let near =
+                state.powerSource == .battery && policy.batteryThreshold.map { level <= $0 + 10 } == true
+            let text = (Double(level) / 100).formatted(.percent)
+            chips.append(
+                StatusChip(
+                    id: "battery", symbol: Self.batterySymbol(level, charging: state.powerSource == .ac), text: text,
+                    tone: near ? .caution : .neutral,
+                    accessibilityLabel: String(localized: "Battery \(text)", comment: "Status chip, VoiceOver")))
+        }
+        switch state.powerSource {
+        case .ac:
+            chips.append(
+                StatusChip(
+                    id: "power", symbol: "powerplug.fill",
+                    text: String(localized: "Power adapter", comment: "Status chip"), tone: .neutral,
+                    accessibilityLabel: String(localized: "On power adapter", comment: "Status chip, VoiceOver")))
+        case .battery:
+            chips.append(
+                StatusChip(
+                    id: "power", symbol: "bolt.slash.fill",
+                    text: String(localized: "Battery power", comment: "Status chip"), tone: .neutral,
+                    accessibilityLabel: String(localized: "On battery power", comment: "Status chip, VoiceOver")))
+        case .unknown:
+            break
+        }
+        chips.append(guardChip(state, policy: policy))
+        return chips
+    }
+
+    private func guardChip(_ state: DeviceState, policy: GuardPolicy) -> StatusChip {
+        let anyOn = policy.batteryThreshold != nil || policy.endOnLowPowerMode || policy.endOnThermalPressure
+        if !anyOn {
+            return StatusChip(
+                id: "guards", symbol: "shield.slash", text: String(localized: "Guards off", comment: "Status chip"),
+                tone: .neutral, accessibilityLabel: String(localized: "Safety guards are off", comment: "VoiceOver"))
+        }
+        let critical =
+            (policy.endOnLowPowerMode && state.isLowPowerModeEnabled)
+            || (policy.endOnThermalPressure && (state.thermalState == .serious || state.thermalState == .critical))
+            || (state.powerSource == .battery
+                && state.batteryLevel.map { level in
+                    policy.batteryThreshold.map { level <= $0 } ?? false
+                } == true)
+        if critical {
+            return StatusChip(
+                id: "guards", symbol: "exclamationmark.shield.fill",
+                text: String(localized: "Guard active", comment: "Status chip"), tone: .critical,
+                accessibilityLabel: String(
+                    localized: "A safety guard is stopping sessions", comment: "Status chip, VoiceOver"))
+        }
+        let near =
+            (policy.endOnThermalPressure && state.thermalState == .fair)
+            || (state.powerSource == .battery
+                && state.batteryLevel.map { level in
+                    policy.batteryThreshold.map { level <= $0 + 10 } ?? false
+                } == true)
+        if near {
+            return StatusChip(
+                id: "guards", symbol: "exclamationmark.shield",
+                text: String(localized: "Near a guard limit", comment: "Status chip"), tone: .caution,
+                accessibilityLabel: String(
+                    localized: "Guards on; one is near its limit", comment: "Status chip, VoiceOver"))
+        }
+        return StatusChip(
+            id: "guards", symbol: "checkmark.shield.fill", text: String(localized: "Guards on", comment: "Status chip"),
+            tone: .good,
+            accessibilityLabel: String(localized: "Safety guards are on", comment: "Status chip, VoiceOver"))
+    }
+
+    static func batterySymbol(_ level: Int, charging: Bool) -> String {
+        if charging { return "battery.100percent.bolt" }
+        switch level {
+        case ..<13: return "battery.0percent"
+        case ..<38: return "battery.25percent"
+        case ..<63: return "battery.50percent"
+        case ..<88: return "battery.75percent"
+        default: return "battery.100percent"
+        }
+    }
+
     // MARK: Actions
 
     /// Primary click, the global shortcut and the popover's on/off control.
@@ -145,7 +406,7 @@ final class PopoverViewModel {
     }
 
     func openRefusalSettings() {
-        openSettings(refusal?.settingsTab)
+        openMainWindow(refusal?.section)
     }
 
     private func perform(_ action: () throws(SessionEngineError) -> Void) {
@@ -165,34 +426,34 @@ final class PopoverViewModel {
                 message: String(
                     localized: "The battery is at or below the \(settings.batteryGuardThreshold)% safety limit.",
                     comment: "Popover: start refused by the battery guard"),
-                settingsTab: .safety)
+                section: .safety)
         case .wouldEndImmediately(.lowPowerMode):
             Refusal(
                 message: String(localized: "Low Power Mode is on.", comment: "Popover: start refused"),
-                settingsTab: .safety)
+                section: .safety)
         case .wouldEndImmediately(.thermalGuard):
             Refusal(
                 message: String(
                     localized: "Your Mac is too warm to keep awake right now.", comment: "Popover: start refused"),
-                settingsTab: .safety)
+                section: .safety)
         case .wouldEndImmediately(.expired):
             Refusal(
                 message: String(
                     localized: "The battery is already at or below that level.", comment: "Popover: start refused"),
-                settingsTab: nil)
+                section: nil)
         case .wouldEndImmediately:
             Refusal(
                 message: String(localized: "That session would end straight away.", comment: "Popover: start refused"),
-                settingsTab: nil)
+                section: nil)
         case .assertionFailed(let code):
             Refusal(
                 message: String(
                     localized: "macOS refused to keep your Mac awake (error \(code)).", comment: "Popover: IOKit error"),
-                settingsTab: nil)
+                section: nil)
         case .sessionNotFound, .invalidState, .notExtendable:
             Refusal(
                 message: String(localized: "That session can't be changed.", comment: "Popover: action refused"),
-                settingsTab: nil)
+                section: nil)
         }
     }
 

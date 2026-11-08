@@ -92,3 +92,94 @@ extension PresetError {
         }
     }
 }
+
+extension EndCause {
+    /// The guard's name and what happened, for notifications and banners;
+    /// `nil` for causes that are not guards.
+    func guardText(settings: UAwakeSettings) -> (title: String, detail: String)? {
+        switch self {
+        case .batteryGuard:
+            (
+                String(localized: "Battery guard", comment: "Notification title"),
+                String(
+                    localized: "The battery reached the \(settings.batteryGuardThreshold)% limit.",
+                    comment: "Notification detail")
+            )
+        case .lowPowerMode:
+            (
+                String(localized: "Low Power Mode", comment: "Notification title"),
+                String(localized: "Low Power Mode turned on.", comment: "Notification detail")
+            )
+        case .thermalGuard:
+            (
+                String(localized: "Thermal guard", comment: "Notification title"),
+                String(localized: "Your Mac got too warm.", comment: "Notification detail")
+            )
+        case .maximumCap:
+            (
+                String(localized: "Maximum duration", comment: "Notification title"),
+                String(
+                    localized: "It reached the \(settings.maximumCapHours)-hour limit.", comment: "Notification detail")
+            )
+        case .expired, .stoppedByUser, .appQuit:
+            nil
+        }
+    }
+}
+
+extension SessionSource {
+    /// Icon tile for session rows. Rules and the rest arrive with their releases.
+    var symbol: String {
+        switch self {
+        case .manual: "hand.tap.fill"
+        case .url: "link"
+        case .rule: "wand.and.stars"
+        case .cli: "terminal.fill"
+        case .shortcut: "square.stack.3d.up.fill"
+        case .mdm: "building.2.fill"
+        }
+    }
+}
+
+extension MainSection {
+    var title: String {
+        switch self {
+        case .overview: String(localized: "Overview", comment: "Main window section")
+        case .durations: String(localized: "Durations", comment: "Main window section")
+        case .safety: String(localized: "Safety", comment: "Main window section")
+        case .appearance: String(localized: "Appearance", comment: "Main window section")
+        case .general: String(localized: "General", comment: "Main window section")
+        case .about: String(localized: "About", comment: "Main window section")
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .overview:
+            String(localized: "What keeps your Mac awake right now.", comment: "Main window section subtitle")
+        case .durations:
+            String(localized: "The presets in the menu bar popover.", comment: "Main window section subtitle")
+        case .safety:
+            String(
+                localized: "When uawake stops by itself to protect your Mac.", comment: "Main window section subtitle")
+        case .appearance:
+            String(localized: "How uawake looks in the menu bar.", comment: "Main window section subtitle")
+        case .general:
+            String(
+                localized: "Startup, the menu bar click and the global shortcut.",
+                comment: "Main window section subtitle")
+        case .about: String(localized: "Version and credits.", comment: "Main window section subtitle")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .overview: "gauge.with.dots.needle.67percent"
+        case .durations: "timer"
+        case .safety: "shield.lefthalf.filled"
+        case .appearance: "paintbrush"
+        case .general: "gearshape"
+        case .about: "info.circle"
+        }
+    }
+}

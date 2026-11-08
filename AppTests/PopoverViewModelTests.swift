@@ -93,10 +93,10 @@ struct PopoverViewModelTests {
     @Test func refusalExplainsTheGuardAndPointsToSafety() {
         engine.apply(.test(lowPowerMode: true))
         model.toggle()
-        #expect(model.refusal == Refusal(message: "Low Power Mode is on.", settingsTab: .safety))
+        #expect(model.refusal == Refusal(message: "Low Power Mode is on.", section: .safety))
         #expect(engine.sessions.isEmpty)
-        var opened: SettingsTab??
-        model.openSettings = { opened = $0 }
+        var opened: MainSection??
+        model.openMainWindow = { opened = $0 }
         model.openRefusalSettings()
         #expect(opened == .safety)
         model.clearRefusal()
@@ -116,15 +116,15 @@ struct PopoverViewModelTests {
         model.start(.indefinite)
         engine.apply(.test(battery: 25, source: .battery))  // Above the 20% guard.
         model.start(.batteryLevel(30))
-        #expect(model.refusal == Refusal(message: "The battery is already at or below that level.", settingsTab: nil))
+        #expect(model.refusal == Refusal(message: "The battery is already at or below that level.", section: nil))
         #expect(engine.sessions.map(\.endCondition) == [.indefinite])
     }
 
     @Test func refusalMessages() {
         settings.batteryGuardThreshold = 30
         let battery = PopoverViewModel.refusal(for: .wouldEndImmediately(.batteryGuard), settings: settings)
-        #expect(battery == Refusal(message: "The battery is at or below the 30% safety limit.", settingsTab: .safety))
-        #expect(PopoverViewModel.refusal(for: .assertionFailed(code: -1), settings: settings).settingsTab == nil)
+        #expect(battery == Refusal(message: "The battery is at or below the 30% safety limit.", section: .safety))
+        #expect(PopoverViewModel.refusal(for: .assertionFailed(code: -1), settings: settings).section == nil)
         #expect(
             PopoverViewModel.refusal(for: .notExtendable, settings: settings).message
                 == "That session can't be changed.")
@@ -170,6 +170,116 @@ struct PopoverViewModelTests {
         #expect(model.statusAccessibilityLabel(now: clock.now) == "uawake: keeping your Mac awake, 1:30 left")
         model.start(.indefinite)
         #expect(model.statusAccessibilityLabel(now: clock.now) == "uawake: keeping your Mac awake")
+    }
+
+    // MARK: Hero
+
+    @Test func heroIdleTimedAndIndefinite() throws {
+        #expect(model.hero(now: clock.now).kind == .idle)
+        model.start(.duration(.seconds(3600)))
+        var hero = model.hero(now: clock.now + 900)
+        #expect(hero.kind == .timed)
+        #expect(hero.countdown == "45:00")
+        #expect(hero.caption.hasPrefix("until "))
+        #expect(hero.progress == 0.25)
+        #expect(!hero.isEndingSoon)
+        hero = model.hero(now: clock.now + 3400)
+        #expect(hero.isEndingSoon)  // Within the 5-minute warning.
+        try engine.start(SessionRequest(source: .url, reason: .custom("x"), endCondition: .indefinite))
+        hero = model.hero(now: clock.now)
+        #expect(
+            hero == Hero(kind: .indefinite, countdown: nil, caption: "Indefinite", progress: nil, isEndingSoon: false))
+    }
+
+    @Test func heroCountsDownToTheLastTimedSession() throws {
+        model.start(.duration(.seconds(600)))
+        try engine.start(SessionRequest(source: .url, reason: .custom("y"), endCondition: .duration(.seconds(1800))))
+        let hero = model.hero(now: clock.now)
+        #expect(hero.countdown == "30:00")
+        #expect(hero.progress == 0)
+    }
+
+    // MARK: Banners
+
+    @Test func refusalAndGuardBanners() throws {
+        engine.apply(.test(lowPowerMode: true))
+        model.toggle()
+        #expect(model.banners.map(\.kind) == [.refusal])
+        #expect(model.banners.first?.tone == .caution)
+        #expect(model.banners.first?.section == .safety)
+
+        engine.apply(.test())
+        model.toggle()  // Succeeds: clears the refusal.
+        let session = try #require(engine.sessions.first)
+        var ended = session
+        ended.state = .ended(.lowPowerMode)
+        model.handle(.ended(ended), now: clock.now + 60)
+        let banner = try #require(model.banners.first)
+        #expect(banner.kind == .guardStop(session.id))
+        #expect(banner.tone == .critical)
+        #expect(banner.title == "Stopped by Low Power Mode")
+        var opened: MainSection??
+        model.openMainWindow = { opened = $0 }
+        model.open(banner)
+        #expect(opened == .safety)
+        model.dismiss(banner)
+        #expect(model.banners.isEmpty)
+    }
+
+    @Test func expiryAndUserStopsMakeNoBanner() throws {
+        model.start(.indefinite)
+        var ended = try #require(engine.sessions.first)
+        ended.state = .ended(.stoppedByUser)
+        model.handle(.ended(ended))
+        #expect(model.banners.isEmpty)
+    }
+
+    // MARK: Kept awake today
+
+    @Test func keptAwakeTodayMergesOverlapsAndClipsToToday() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        let midnight = calendar.startOfDay(for: clock.now) + 86_400
+        let now = midnight + 3600  // 01:00 the next day.
+        // 23:00–00:30 overlapping 00:00–00:45; only 00:00–00:45 is today.
+        func ended(from start: Date, to end: Date) throws {
+            var session = Session(
+                source: .manual, reason: .custom("s"), modes: [.system], endCondition: .indefinite, startedAt: start,
+                deadline: nil)
+            session.state = .ended(.stoppedByUser)
+            model.handle(.ended(session), now: end)
+        }
+        try ended(from: midnight - 3600, to: midnight + 1800)
+        try ended(from: midnight, to: midnight + 2700)
+        #expect(model.keptAwakeToday(now: now, calendar: calendar) == .seconds(2700))
+        #expect(PopoverViewModel.keptAwakeText(.seconds(12_000)) == "3h 20m")
+        #expect(PopoverViewModel.keptAwakeText(.seconds(0)) == "0m")
+    }
+
+    @Test func keptAwakeTodayIncludesActiveSessions() {
+        model.start(.indefinite)
+        #expect(model.keptAwakeToday(now: clock.now + 600) == .seconds(600))
+    }
+
+    // MARK: Status strip
+
+    @Test func statusChips() {
+        #expect(model.statusChips.isEmpty)
+        engine.apply(.test(battery: 76, source: .battery))
+        #expect(model.statusChips.map(\.id) == ["battery", "power", "guards"])
+        #expect(model.statusChips.map(\.tone) == [.neutral, .neutral, .good])
+        #expect(model.statusChips[0].text == "76%")
+        engine.apply(.test(battery: 28, source: .battery))  // Within 10 points of the 20% guard.
+        #expect(model.statusChips[0].tone == .caution)
+        #expect(model.statusChips[2].tone == .caution)
+        engine.apply(.test(battery: 90, source: .ac, lowPowerMode: true))
+        #expect(model.statusChips.map(\.tone) == [.neutral, .neutral, .critical])
+        #expect(model.statusChips[0].symbol == "battery.100percent.bolt")
+        settings.batteryGuardEnabled = false
+        settings.lowPowerModeGuardEnabled = false
+        settings.thermalGuardEnabled = false
+        #expect(model.statusChips.last?.text == "Guards off")
+        engine.apply(.test(battery: nil, source: .ac))
+        #expect(model.statusChips.map(\.id) == ["power", "guards"])
     }
 
     // MARK: Other localized text
