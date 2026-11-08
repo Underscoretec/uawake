@@ -308,6 +308,19 @@ struct SessionEngineTests {
         #expect(throws: SessionEngineError.invalidState) { try engine.resume(session.id) }
     }
 
+    @Test func pauseAndResumeAreReportedAsEvents() async throws {
+        let session = try engine.start(request(.duration(.seconds(600))))
+        var events = engine.events().makeAsyncIterator()
+        engine.handle(.userSessionDidResignActive)
+        engine.handle(.userSessionDidBecomeActive)
+        guard case .paused(let paused) = await events.next(), case .resumed(let resumed) = await events.next() else {
+            Issue.record("expected paused then resumed")
+            return
+        }
+        #expect(paused.id == session.id && paused.state == .paused(remaining: .seconds(600)))
+        #expect(resumed.state == .active)
+    }
+
     @Test func wakeEndsSessionsWhoseDeadlinePassedDuringSleep() throws {
         try engine.start(request(.duration(.seconds(60))))
         engine.handle(.systemWillSleep)

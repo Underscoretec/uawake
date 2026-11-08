@@ -23,27 +23,46 @@ final class AppUITests: XCTestCase {
         XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
         XCTAssertTrue(popover.text("Your Mac can sleep normally").waitForExistence(timeout: 3))
         popover.labeled("Keep awake").click()
-        XCTAssertTrue(popover.text("Manual: indefinite").waitForExistence(timeout: 2))
+        XCTAssertTrue(popover.text("Started manually at").waitForExistence(timeout: 2))
         XCTAssertTrue(popover.text("Keeping your Mac awake").exists)
+        XCTAssertTrue(popover.text("Change to").exists)
+        XCTAssertFalse(popover.text("Sessions").exists)  // One session: shown in the hero.
         XCTAssertTrue(popover.labeled("Safety guards are on").exists)
         popover.labeled("Keep awake").click()
         XCTAssertTrue(popover.text("Your Mac can sleep normally").waitForExistence(timeout: 2))
     }
 
     @MainActor
-    func testPresetChipExtendAndStop() throws {
+    func testPresetChipExtendAndStop() throws {  // Single session: extend in the hero.
         app.launchArguments = ["-UITesting", "-UITestDeviceState", "battery"]
         app.launch()
         let popover = app.windows["Popover"]
         XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
         popover.buttons["Keep awake: 15 min"].click()
-        XCTAssertTrue(popover.text("Manual: 15 minutes").waitForExistence(timeout: 2))
-        let extend = popover.buttons["Extend Manual: 15 minutes by 15 minutes"]
+        XCTAssertTrue(popover.text("15 minutes").waitForExistence(timeout: 2))
+        let extend = popover.buttons["Extend 15 minutes by 15 minutes"]
         XCTAssertTrue(extend.exists)
         extend.click()
         XCTAssertTrue(popover.text("29:").waitForExistence(timeout: 2))
-        popover.buttons["Stop Manual: 15 minutes"].click()
+        popover.labeled("Keep awake").click()
         XCTAssertTrue(popover.text("Your Mac can sleep normally").waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func testTwoSessionsShowTheList() throws {
+        app.launchArguments = [
+            "-UITesting", "-UITestDeviceState", "battery", "-UITestOpenURL",
+            "uawake://activate?duration=45m&reason=Render",
+        ]
+        app.launch()
+        let popover = app.windows["Popover"]
+        XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
+        popover.buttons["Keep awake: 1 hr"].click()
+        XCTAssertTrue(popover.text("Sessions").waitForExistence(timeout: 2))
+        XCTAssertTrue(popover.text("Started from a link at").exists)
+        XCTAssertTrue(popover.buttons["Stop Render"].exists)
+        popover.buttons["Stop Render"].click()
+        XCTAssertFalse(popover.text("Sessions").waitForExistence(timeout: 1))
     }
 
     @MainActor

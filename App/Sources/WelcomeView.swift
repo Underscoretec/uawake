@@ -62,7 +62,7 @@ struct WelcomeView: View {
             if welcome.iconHidden {
                 Label {
                     Text(
-                        "The uawake icon may be hidden by the camera notch or a full menu bar. To make room, hold Command and drag other icons out of the menu bar, or quit menu bar apps you don't need. You can also set a shortcut to turn uawake on in Settings."
+                        "The uawake icon may be hidden by the camera notch or a full menu bar. To make room, hold Command and drag other icons out of the menu bar, or quit menu bar apps you don't need. You can always open uawake again from Applications or Spotlight to show its window, or set a shortcut in Settings."
                     )
                     .fixedSize(horizontal: false, vertical: true)
                 } icon: {

@@ -16,15 +16,17 @@ final class AppModel {
     let popover: PopoverViewModel
     let notifications: NotificationController
     let hotKey = HotKeyController()
+    let updates: UpdatesModel
     /// Why the current shortcut could not be registered, or `nil`.
     private(set) var shortcutProblem: String?
 
-    /// `uiTesting` keeps settings in a throwaway domain, so UI tests never touch real settings.
-    /// `fixedDeviceState` replaces the real power monitor (UI tests and screenshots).
-    init(uiTesting: Bool = false, fixedDeviceState: DeviceState? = nil) {
+    /// `settingsSuite` keeps settings in a throwaway domain (cleared at launch), so UI tests
+    /// and acceptance runs never touch real settings. `fixedDeviceState` replaces the real
+    /// power monitor (UI tests and screenshots).
+    init(settingsSuite: String? = nil, fixedDeviceState: DeviceState? = nil) {
         let defaults: UserDefaults
-        if uiTesting, let testDefaults = UserDefaults(suiteName: "com.underscoretec.uawake.uitests") {
-            testDefaults.removePersistentDomain(forName: "com.underscoretec.uawake.uitests")
+        if let settingsSuite, let testDefaults = UserDefaults(suiteName: settingsSuite) {
+            testDefaults.removePersistentDomain(forName: settingsSuite)
             defaults = testDefaults
         } else {
             defaults = .standard
@@ -41,6 +43,7 @@ final class AppModel {
         self.engine = engine
         popover = PopoverViewModel(engine: engine, settings: settings)
         notifications = NotificationController(engine: engine, settings: settings)
+        updates = UpdatesModel(settings: settings)
 
         if let fixedDeviceState {
             engine.apply(fixedDeviceState)

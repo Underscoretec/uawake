@@ -21,6 +21,9 @@ settings:
     SWIFT_EMIT_LOC_STRINGS: YES
     DEAD_CODE_STRIPPING: YES
 packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.9.6
   UAwakeCore:
     path: Packages/UAwakeCore
   UAwakeSystem:
@@ -50,6 +53,7 @@ targets:
       - package: UAwakeCore
       - package: UAwakeSystem
       - package: UAwakeIPC
+      - package: Sparkle
   uawakeTests:
     type: bundle.unit-test
     platform: macOS

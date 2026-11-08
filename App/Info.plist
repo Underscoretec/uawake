@@ -2,6 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Sparkle. Both values are placeholders until the update feed and EdDSA key exist;
+	     the updater stays off while SUPublicEDKey is the placeholder (docs/RELEASING.md). -->
+	<key>SUFeedURL</key>
+	<string>https://updates.example.invalid/uawake/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>REPLACE_WITH_EDDSA_PUBLIC_KEY</string>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

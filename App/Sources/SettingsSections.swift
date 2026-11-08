@@ -222,3 +222,39 @@ struct AboutView: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+struct UpdatesSettingsView: View {
+    let updates: UpdatesModel
+    @AppStorage(SettingsKey.updateChannel.rawValue) private var channel = UpdateChannel.stable.rawValue
+    @State private var automaticallyChecks = false
+
+    var body: some View {
+        Form {
+            if !updates.isConfigured {
+                Label {
+                    Text("Updates aren't set up in this build. Release builds check for updates automatically.")
+                } icon: {
+                    Image(systemName: "info.circle")
+                }
+                .foregroundStyle(Color.secondaryText)
+            }
+            Toggle("Check for updates automatically", isOn: $automaticallyChecks)
+                .onChange(of: automaticallyChecks) { _, value in updates.automaticallyChecks = value }
+            Picker("Update channel", selection: $channel) {
+                Text("Stable").tag(UpdateChannel.stable.rawValue)
+                Text("Beta").tag(UpdateChannel.beta.rawValue)
+            }
+            LabeledContent("Last checked") {
+                if let date = updates.lastCheck {
+                    Text(date, format: .dateTime)
+                } else {
+                    Text("Never")
+                }
+            }
+            Button("Check for Updates…", action: updates.checkForUpdates)
+        }
+        .formStyle(.grouped)
+        .disabled(!updates.isConfigured)
+        .onAppear { automaticallyChecks = updates.automaticallyChecks }
+    }
+}

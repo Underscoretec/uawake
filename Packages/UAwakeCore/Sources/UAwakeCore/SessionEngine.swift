@@ -71,6 +71,10 @@ public enum SessionEvent: Equatable, Sendable {
     case started(Session)
     /// A `duration` or `until` session reached ``SessionEngine/endWarning`` before its deadline.
     case aboutToEnd(Session)
+    /// Assertions released, e.g. for fast user switching. Paused time is not awake time.
+    case paused(Session)
+    /// Assertions re-acquired after a pause.
+    case resumed(Session)
     /// The session's state is `.ended(cause)`.
     case ended(Session)
 }

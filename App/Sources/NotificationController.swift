@@ -47,7 +47,7 @@ final class NotificationController: NSObject, UNUserNotificationCenterDelegate {
 
     func handle(_ event: SessionEvent) {
         switch event {
-        case .started:
+        case .started, .paused, .resumed:
             break
         case .aboutToEnd(let session):
             guard let deadline = session.deadline else { return }

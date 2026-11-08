@@ -10,6 +10,18 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let popover = NSPopover()
     private var ticker: Timer?
+    /// The countdown text last drawn in the menu bar, and when (acceptance sampling).
+    private(set) var lastCountdown: String?
+    private(set) var lastRendered: Date?
+
+    private struct Appearance: Equatable {
+        let style: IconStyle
+        let active: Bool
+        let countdown: String?
+    }
+
+    /// What the button shows now; redraws only when this changes.
+    private var drawn: Appearance?
 
     init(model: AppModel, keepsPopoverOpen: Bool = false) {
         self.model = model
@@ -54,10 +66,12 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         if popover.isShown { popover.performClose(nil) } else { showPopover() }
     }
 
-    func showPopover() {
+    /// `anchor` replaces the status item (UI tests on a Mac where the item isn't placed).
+    func showPopover(anchor: NSView? = nil) {
         guard let button = statusItem.button, !popover.isShown else { return }
         model.popover.reload()
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        let view = anchor ?? button
+        popover.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
     }
 
@@ -79,21 +93,30 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         guard let button = statusItem.button else { return }
         let viewModel = model.popover
         let active = viewModel.isAwake
-        let countdown = model.settings.showsCountdown ? viewModel.countdown(now: Date()) : nil
-        button.image = Self.statusImage(style: model.settings.iconStyle, active: active, countdown: countdown)
-        button.setAccessibilityLabel(viewModel.statusAccessibilityLabel(now: Date()))
+        let now = Date()
+        let remaining = model.settings.showsCountdown ? viewModel.countdownRemaining(now: now) : nil
+        let countdown = remaining.map(PopoverViewModel.menuBarText)
+        let appearance = Appearance(style: model.settings.iconStyle, active: active, countdown: countdown)
+        if appearance != drawn {
+            button.image = Self.statusImage(style: appearance.style, active: active, countdown: countdown)
+            button.setAccessibilityLabel(viewModel.statusAccessibilityLabel(now: Date()))
+            drawn = appearance
+        }
+        lastCountdown = countdown
+        lastRendered = Date()
 
-        let needsTicker = countdown != nil
-        if needsTicker && ticker == nil {
-            let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+        // One-shot timer for the moment the text next changes: once a minute, then every
+        // second in the final minute.
+        ticker?.invalidate()
+        ticker = nil
+        if let remaining {
+            let delay = PopoverViewModel.secondsUntilMenuBarChange(remaining) + 0.02
+            let timer = Timer(timeInterval: delay, repeats: false) { [weak self] _ in
                 MainActor.assumeIsolated { self?.update() }
             }
-            timer.tolerance = 0.1
+            timer.tolerance = 0.05
             RunLoop.main.add(timer, forMode: .common)
             ticker = timer
-        } else if !needsTicker {
-            ticker?.invalidate()
-            ticker = nil
         }
     }
 
@@ -101,31 +124,65 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     /// compact pill while a timed session runs. A template image, so the menu bar tints it
     /// for light, dark and wallpaper-tinted bars.
     static func statusImage(style: IconStyle, active: Bool, countdown: String?) -> NSImage {
-        let symbols = symbols(style)
-        let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
-        let symbol =
-            NSImage(systemSymbolName: active ? symbols.active : symbols.inactive, accessibilityDescription: nil)?
-            .withSymbolConfiguration(configuration) ?? NSImage()
-        guard let countdown else {
-            symbol.isTemplate = true
-            return symbol
-        }
-        let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
-        let text = NSAttributedString(string: countdown, attributes: [.font: font, .foregroundColor: NSColor.black])
+        let symbol = symbolImage(style: style, active: active)
+        guard let countdown else { return symbol }
+        let text = NSAttributedString(string: countdown, attributes: pillTextAttributes)
         let textSize = text.size()
         let height: CGFloat = 18
         let symbolSize = NSSize(width: symbol.size.width * 0.86, height: symbol.size.height * 0.86)
         let size = NSSize(width: 7 + symbolSize.width + 4 + ceil(textSize.width) + 8, height: height)
-        let image = NSImage(size: size, flipped: false) { rect in
-            NSColor.black.withAlphaComponent(0.22).setFill()
-            NSBezierPath(roundedRect: rect, xRadius: height / 2, yRadius: height / 2).fill()
-            symbol.draw(
-                in: NSRect(
-                    x: 7, y: (height - symbolSize.height) / 2, width: symbolSize.width, height: symbolSize.height))
-            text.draw(at: NSPoint(x: 7 + symbolSize.width + 4, y: (height - textSize.height) / 2))
-            return true
-        }
+        // Drawn once into a 2x bitmap. A drawing-handler image would re-run this code every
+        // time the menu bar draws the item, which cost ~0.9% CPU with a 1 s countdown.
+        let scale: CGFloat = 2
+        guard
+            let bitmap = NSBitmapImageRep(
+                bitmapDataPlanes: nil, pixelsWide: Int(ceil(size.width * scale)),
+                pixelsHigh: Int(ceil(size.height * scale)), bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)
+        else { return symbol }
+        bitmap.size = size
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
+        NSColor.black.withAlphaComponent(0.22).setFill()
+        NSBezierPath(roundedRect: NSRect(origin: .zero, size: size), xRadius: height / 2, yRadius: height / 2).fill()
+        symbol.draw(
+            in: NSRect(x: 7, y: (height - symbolSize.height) / 2, width: symbolSize.width, height: symbolSize.height))
+        text.draw(at: NSPoint(x: 7 + symbolSize.width + 4, y: (height - textSize.height) / 2))
+        NSGraphicsContext.restoreGraphicsState()
+        let image = NSImage(size: size)
+        image.addRepresentation(bitmap)
         image.isTemplate = true
+        return image
+    }
+
+    private static let pillTextAttributes: [NSAttributedString.Key: Any] = [
+        .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold), .foregroundColor: NSColor.black,
+    ]
+    private static var symbolCache: [String: NSImage] = [:]
+
+    /// The menu bar symbol, rasterized once per style and state: drawing a vector symbol
+    /// every second was the largest share of the countdown's CPU cost.
+    private static func symbolImage(style: IconStyle, active: Bool) -> NSImage {
+        let name = active ? symbols(style).active : symbols(style).inactive
+        if let cached = symbolCache[name] { return cached }
+        let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+        guard
+            let vector = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+                .withSymbolConfiguration(configuration),
+            let bitmap = NSBitmapImageRep(
+                bitmapDataPlanes: nil, pixelsWide: Int(ceil(vector.size.width * 2)),
+                pixelsHigh: Int(ceil(vector.size.height * 2)), bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)
+        else { return NSImage() }
+        bitmap.size = vector.size
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
+        vector.draw(in: NSRect(origin: .zero, size: vector.size))
+        NSGraphicsContext.restoreGraphicsState()
+        let image = NSImage(size: vector.size)
+        image.addRepresentation(bitmap)
+        image.isTemplate = true
+        symbolCache[name] = image
         return image
     }
 

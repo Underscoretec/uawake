@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var welcomeWindow: WelcomeWindowController?
     private var previewWindow: NSWindow?
     private var standIn: NSWindow?
+    private var backdrop: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Hosting unit tests: they build their own models; show nothing.
@@ -17,7 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let options = LaunchOptions(ProcessInfo.processInfo.arguments)
         if let appearance = options.appearance { NSApplication.shared.appearance = NSAppearance(named: appearance) }
 
-        let model = AppModel(uiTesting: options.uiTesting, fixedDeviceState: options.deviceState)
+        let model = AppModel(settingsSuite: options.settingsSuite, fixedDeviceState: options.deviceState)
         self.model = model
         if options.showsCountdown { model.settings.showsCountdown = true }
         let mainWindow = MainWindowController(model: model)
@@ -29,11 +30,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let statusItem = StatusItemController(model: model, keepsPopoverOpen: options.uiTesting)
         self.statusItem = statusItem
 
-        if options.uiTesting {
+        if let url = options.url { model.open(url) }
+        if let interval = options.sampleInterval {
+            sampleCountdown(every: interval, model: model, statusItem: statusItem)
+        }
+
+        if options.headless {
+            return
+        } else if options.uiTesting {
             model.popover.showPopover = {}  // The stand-in is already on screen.
-            if let url = options.url { model.open(url) }
+            if let backdrop = options.backdrop { showBackdrop(dark: backdrop == "dark") }
             if options.showsMainWindow {
                 mainWindow.show(section: .overview)
+            } else if options.showsRealPopover {
+                showRealPopover(statusItem)
             } else {
                 showPopoverStandIn(model)
             }
@@ -43,6 +53,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             welcomeWindow = welcome
             welcome.show()
         }
+    }
+
+    /// Launching uawake again while it runs (Finder, Spotlight, Launchpad, `open`) shows the
+    /// main window: the guaranteed way in when the menu bar icon is hidden.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        mainWindow?.show(section: .overview)
+        return false
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
@@ -63,8 +80,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .defaultAppStorage(model.settings.defaults))
         controller.sizingOptions = .preferredContentSize
-        let window = KeyableWindow(contentViewController: controller)
-        window.styleMask = [.borderless]
+        // Borderless from creation: converting a titled window leaves its frame view drawing
+        // square corners behind the rounded content.
+        let window = KeyableWindow(contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: false)
+        window.contentViewController = controller
+        window.level = .floating
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = true
@@ -75,6 +95,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         pinUnderMenuBar(window)
         window.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate()
+    }
+
+    /// The real NSPopover, anchored to a small window near the top of the screen, to check its
+    /// chrome (rounded corners, arrow, material) in screenshots.
+    private func showRealPopover(_ statusItem: StatusItemController) {
+        guard let screen = NSScreen.main else { return }
+        let frame = NSRect(x: screen.visibleFrame.maxX - 420, y: screen.visibleFrame.maxY - 40, width: 40, height: 20)
+        let window = NSWindow(contentRect: frame, styleMask: [.borderless], backing: .buffered, defer: false)
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.orderFrontRegardless()
+        standIn = window
+        NSApplication.shared.activate()
+        statusItem.showPopover(anchor: window.contentView)
+    }
+
+    /// A plain dark or light "desktop" behind the screenshots, so dark mode is judged over a
+    /// dark background and light mode over a light one.
+    private func showBackdrop(dark: Bool) {
+        guard let screen = NSScreen.main else { return }
+        let window = NSWindow(contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+        window.backgroundColor = dark ? NSColor(white: 0.08, alpha: 1) : NSColor(white: 0.93, alpha: 1)
+        window.level = .normal
+        window.ignoresMouseEvents = true
+        window.orderFrontRegardless()
+        backdrop = window
+    }
+
+    /// Acceptance evidence for "countdown accurate to within 1 second": logs what the menu
+    /// bar last drew against the true time left, every `interval` seconds.
+    private func sampleCountdown(every interval: Int, model: AppModel, statusItem: StatusItemController) {
+        Task {
+            while true {
+                try? await Task.sleep(for: .seconds(interval))
+                let now = Date()
+                let expected = model.popover.menuBarCountdown(now: now) ?? "-"
+                let shown = statusItem.lastCountdown ?? "-"
+                let age = statusItem.lastRendered.map { now.timeIntervalSince($0) } ?? -1
+                AppModel.logger.notice(
+                    "COUNTDOWN wall=\(now.timeIntervalSince1970, format: .fixed(precision: 3)) shown=\(shown, privacy: .public) expected=\(expected, privacy: .public) renderedAgo=\(age, format: .fixed(precision: 3))"
+                )
+            }
+        }
     }
 
     /// Keeps the stand-in's top edge under the menu bar as its content grows.
@@ -106,6 +169,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 struct LaunchOptions {
     var uiTesting = false
     var showsMainWindow = false
+    var showsRealPopover = false
     var showsMenuBarPreview = false
     var showsCountdown = false
     var appearance: NSAppearance.Name?
@@ -113,6 +177,16 @@ struct LaunchOptions {
     var crowdMenuBar: Int?
     /// Routed through the URL scheme at launch (`-UITestOpenURL uawake://…`).
     var url: URL?
+    /// No windows, isolated settings: acceptance and performance runs.
+    var headless = false
+    var sampleInterval: Int?
+    var backdrop: String?
+
+    var settingsSuite: String? {
+        if uiTesting { return "com.underscoretec.uawake.uitests" }
+        if headless { return "com.underscoretec.uawake.headless.\(ProcessInfo.processInfo.processIdentifier)" }
+        return nil
+    }
 
     init(_ arguments: [String]) {
         func value(after flag: String) -> String? {
@@ -121,6 +195,7 @@ struct LaunchOptions {
         }
         uiTesting = arguments.contains("-UITesting")
         showsMainWindow = arguments.contains("-UITestMainWindow")
+        showsRealPopover = arguments.contains("-UITestRealPopover")
         showsMenuBarPreview = arguments.contains("-UITestMenuBarPreview")
         showsCountdown = arguments.contains("-UITestCountdown")
         switch value(after: "-UITestAppearance") {
@@ -140,7 +215,10 @@ struct LaunchOptions {
             deviceState = nil
         }
         crowdMenuBar = value(after: "-CrowdMenuBar").flatMap(Int.init)
-        url = value(after: "-UITestOpenURL").flatMap(URL.init(string:))
+        url = (value(after: "-OpenURL") ?? value(after: "-UITestOpenURL")).flatMap(URL.init(string:))
+        headless = arguments.contains("-Headless")
+        sampleInterval = value(after: "-SampleCountdown").flatMap(Int.init)
+        backdrop = value(after: "-UITestBackdrop")
     }
 }
 
@@ -152,7 +230,7 @@ private struct MenuBarPreview: View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let image = StatusItemController.statusImage(
                 style: model.settings.iconStyle, active: model.isAwake,
-                countdown: model.settings.showsCountdown ? model.countdown(now: context.date) : nil)
+                countdown: model.settings.showsCountdown ? model.menuBarCountdown(now: context.date) : nil)
             HStack(spacing: 14) {
                 Image(systemName: "wifi")
                 Image(nsImage: image).renderingMode(.template)

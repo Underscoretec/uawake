@@ -119,6 +119,8 @@ public final class DefaultSessionEngine: SessionEngine {
         if let handle = handles.removeValue(forKey: id) { assertions.release(handle) }
         sessions[index].state = .paused(remaining: remaining)
         sessions[index].deadline = nil
+        logger.info("Paused \(session.reason.englishDescription, privacy: .public)")
+        emit(.paused(sessions[index]))
         rearm()
     }
 
@@ -129,6 +131,8 @@ public final class DefaultSessionEngine: SessionEngine {
         handles[id] = try assertions.acquire(modes: session.modes, reason: session.reason.englishDescription)
         sessions[index].state = .active
         sessions[index].deadline = remaining.map { clock.now + $0.timeInterval } ?? capDeadline(for: session)
+        logger.info("Resumed \(session.reason.englishDescription, privacy: .public)")
+        emit(.resumed(sessions[index]))
         tick()
     }
 

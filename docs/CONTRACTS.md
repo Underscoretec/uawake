@@ -27,7 +27,7 @@ Owns every session and is the only holder of assertions. `start` acquires before
 returning (and throws without creating a session on failure); `stop`/`stopAll`
 release immediately; `extend`, `pause`, `resume` adjust deadlines and assertions.
 `sessions` is observable for SwiftUI. `events()` streams `SessionEvent`s:
-`started`, `aboutToEnd` (a duration or until-time session reaching `endWarning` before
+`started`, `paused`, `resumed`, `aboutToEnd` (a duration or until-time session reaching `endWarning` before
 its deadline; sessions shorter than the lead time are not warned) and `ended` (carrying
 its cause). Notifications, the UI and, later, history consume it.
 

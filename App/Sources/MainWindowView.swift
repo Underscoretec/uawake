@@ -21,7 +21,7 @@ struct MainWindowView: View {
                     row(.overview)
                 }
                 Section(String(localized: "Settings", comment: "Sidebar group")) {
-                    ForEach([MainSection.durations, .safety, .appearance, .general]) { row($0) }
+                    ForEach([MainSection.durations, .safety, .appearance, .general, .updates]) { row($0) }
                 }
                 Section {
                     row(.about)
@@ -43,7 +43,7 @@ struct MainWindowView: View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(section.title).font(.title2.weight(.bold))
-                Text(section.subtitle).foregroundStyle(.secondary)
+                Text(section.subtitle).foregroundStyle(Color.secondaryText)
             }
             .padding(.horizontal, 28)
             .padding(.top, 24)
@@ -56,6 +56,7 @@ struct MainWindowView: View {
             case .safety: SafetySettingsView()
             case .appearance: AppearanceSettingsView()
             case .general: GeneralSettingsView(model: model)
+            case .updates: UpdatesSettingsView(updates: model.updates)
             case .about: AboutView()
             }
         }
@@ -74,11 +75,14 @@ private struct OverviewSection: View {
                     HeroView(model: model, now: context.date, large: true)
                     StatusStrip(chips: model.statusChips)
                     QuickStartView(model: model, columns: 4)
-                    SessionList(model: model, now: context.date, large: true)
+                    if model.showsSessionList {
+                        SessionList(model: model, now: context.date, large: true)
+                    }
                     FooterView(model: model, now: context.date)
                 }
                 .padding(.horizontal, 28)
-                .padding(.vertical, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 32)
                 .frame(maxWidth: 680, alignment: .leading)
             }
         }

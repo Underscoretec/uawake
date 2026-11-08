@@ -2,7 +2,7 @@
   "sourceLanguage": "en",
   "strings": {
     "%@ ended. %@": {
-      "comment": "Notification body: reason, then why the guard ended it"
+      "comment": "Banner body: session, then why the guard ended it"
     },
     "%@ ends in %@.": {
       "comment": "Notification body: reason, time left"
@@ -41,6 +41,7 @@
     "Battery power": {
       "comment": "Status chip"
     },
+    "Beta": {},
     "Bolt": {
       "comment": "Menu bar icon style"
     },
@@ -52,6 +53,11 @@
     },
     "Cancel": {},
     "Change duration": {},
+    "Change to": {
+      "comment": "Preset header while a manual session runs"
+    },
+    "Check for Updates…": {},
+    "Check for updates automatically": {},
     "Clear": {},
     "Clear shortcut": {},
     "Click the icon to turn uawake on or off. Option-click or right-click it for durations and settings.": {},
@@ -94,6 +100,9 @@
     "Guards on; one is near its limit": {
       "comment": "Status chip, VoiceOver"
     },
+    "How uawake keeps itself up to date.": {
+      "comment": "Main window section subtitle"
+    },
     "How uawake looks in the menu bar.": {
       "comment": "Main window section subtitle"
     },
@@ -113,6 +122,7 @@
     "Keep it awake for a while, or until you turn it off.": {},
     "Keeping your Mac awake": {},
     "Kept awake today: %@": {},
+    "Last checked": {},
     "Limit sessions without an end time": {},
     "Low Power Mode": {
       "comment": "Notification title"
@@ -141,6 +151,7 @@
     "Near a guard limit": {
       "comment": "Status chip"
     },
+    "Never": {},
     "No active sessions": {},
     "Notifications are off. You can turn them on in System Settings.": {},
     "Notifications are on.": {},
@@ -156,7 +167,6 @@
     "Overview": {
       "comment": "Main window section"
     },
-    "Paused": {},
     "Power adapter": {
       "comment": "Status chip"
     },
@@ -203,7 +213,26 @@
     "Shortcut %@. Press to change.": {},
     "Shortcut to turn uawake on or off": {},
     "Show remaining time in the menu bar": {},
+    "Stable": {},
     "Start": {},
+    "Started by a rule at %@": {
+      "comment": "Session subtitle"
+    },
+    "Started by your organisation at %@": {
+      "comment": "Session subtitle"
+    },
+    "Started from Shortcuts at %@": {
+      "comment": "Session subtitle"
+    },
+    "Started from a link at %@": {
+      "comment": "Session subtitle"
+    },
+    "Started from the command line at %@": {
+      "comment": "Session subtitle"
+    },
+    "Started manually at %@": {
+      "comment": "Session subtitle"
+    },
     "Startup, the menu bar click and the global shortcut.": {
       "comment": "Main window section subtitle"
     },
@@ -243,7 +272,7 @@
     "The presets in the menu bar popover.": {
       "comment": "Main window section subtitle"
     },
-    "The uawake icon may be hidden by the camera notch or a full menu bar. To make room, hold Command and drag other icons out of the menu bar, or quit menu bar apps you don't need. You can also set a shortcut to turn uawake on in Settings.": {},
+    "The uawake icon may be hidden by the camera notch or a full menu bar. To make room, hold Command and drag other icons out of the menu bar, or quit menu bar apps you don't need. You can always open uawake again from Applications or Spotlight to show its window, or set a shortcut in Settings.": {},
     "Thermal guard": {
       "comment": "Notification title"
     },
@@ -254,7 +283,18 @@
       "comment": "Session source"
     },
     "Until": {},
+    "Until %@": {
+      "comment": "Session title; the argument is a time of day"
+    },
+    "Until battery %@": {
+      "comment": "Session title; the argument is a battery percentage"
+    },
     "Until…": {},
+    "Update channel": {},
+    "Updates": {
+      "comment": "Main window section"
+    },
+    "Updates aren't set up in this build. Release builds check for updates automatically.": {},
     "Use hours, minutes and seconds in that order, like 45m or 1h30m.": {
       "comment": "Durations settings: invalid entry"
     },

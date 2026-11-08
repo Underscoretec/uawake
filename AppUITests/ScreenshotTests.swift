@@ -19,7 +19,7 @@ final class ScreenshotTests: XCTestCase {
 
     @MainActor
     private func capture(_ mode: String) throws {
-        let base = ["-UITesting", "-UITestAppearance", mode, "-UITestDeviceState", "battery"]
+        let base = ["-UITesting", "-UITestAppearance", mode, "-UITestBackdrop", mode, "-UITestDeviceState", "battery"]
 
         // Popover: idle and one timed session; the menu bar pill.
         launch(base + ["-UITestCountdown", "-UITestMenuBarPreview"])
@@ -27,7 +27,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
         shoot(popover, "popover-idle-\(mode)")
         popover.buttons["Keep awake: 1 hr"].click()
-        XCTAssertTrue(popover.text("Manual: 1 hour").waitForExistence(timeout: 3))
+        XCTAssertTrue(popover.text("Started manually at").waitForExistence(timeout: 3))
         shoot(popover, "popover-one-session-\(mode)")
         shoot(app.windows["MenuBarPreview"], "menubar-pill-\(mode)")
         app.terminate()
@@ -36,16 +36,23 @@ final class ScreenshotTests: XCTestCase {
         launch(base + ["-UITestOpenURL", "uawake://activate?duration=45m&reason=Render"])
         XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
         popover.buttons["Keep awake: 2 hrs"].click()
-        XCTAssertTrue(popover.text("Manual: 2 hours").waitForExistence(timeout: 3))
+        XCTAssertTrue(popover.text("Sessions").waitForExistence(timeout: 3))
         shoot(popover, "popover-two-sessions-\(mode)")
         app.terminate()
 
         // Popover: refusal banner.
-        launch(["-UITesting", "-UITestAppearance", mode, "-UITestDeviceState", "lowPower"])
+        launch(["-UITesting", "-UITestAppearance", mode, "-UITestBackdrop", mode, "-UITestDeviceState", "lowPower"])
         XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
         popover.labeled("Keep awake").click()
         XCTAssertTrue(popover.text("Low Power Mode is on.").waitForExistence(timeout: 3))
         shoot(popover, "popover-refusal-\(mode)")
+        app.terminate()
+
+        // The real NSPopover's own chrome, for comparison with the stand-in.
+        launch(base + ["-UITestRealPopover"])
+        let real = app.popovers.firstMatch
+        XCTAssertTrue(real.waitForExistence(timeout: 10))
+        shoot(real, "popover-real-chrome-\(mode)")
         app.terminate()
 
         // Main window: every section, with a session running on Overview.
@@ -53,9 +60,9 @@ final class ScreenshotTests: XCTestCase {
         let window = app.windows["Main"]
         XCTAssertTrue(window.waitForExistence(timeout: 10))
         window.buttons["Keep awake: 2 hrs"].click()
-        XCTAssertTrue(window.text("Manual: 2 hours").waitForExistence(timeout: 2))
+        XCTAssertTrue(window.text("Started manually at").waitForExistence(timeout: 2))
         shoot(window, "main-overview-\(mode)")
-        for section in ["Durations", "Safety", "Appearance", "General", "About"] {
+        for section in ["Durations", "Safety", "Appearance", "General", "Updates", "About"] {
             window.text(section).click()
             sleep(1)
             shoot(window, "main-\(section.lowercased())-\(mode)")

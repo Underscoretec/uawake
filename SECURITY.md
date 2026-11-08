@@ -1,6 +1,16 @@
 # Security policy
 
-uawake is pre-alpha and has no supported release yet.
+## Supported versions
+Only the latest release receives security fixes. uawake 0.1.0 is the first alpha.
 
-How to report vulnerabilities privately will be published here before the 0.1 alpha.
-Until then, please do not open public issues for security problems.
+## Reporting a vulnerability
+Please report vulnerabilities privately, not in public issues.
+
+- Email **security@underscoretec.com**.
+- We acknowledge every report within **5 business days** and keep you updated until it is resolved.
+
+Include the uawake version, macOS version, steps to reproduce and the impact you see.
+
+## Scope
+The main app runs in the App Sandbox with minimal entitlements. Release builds are signed with
+Underscore Technology's Developer ID, notarized, and updated through Sparkle with EdDSA-signed updates.

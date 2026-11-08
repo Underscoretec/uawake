@@ -71,7 +71,9 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
 - App: `build/DerivedData/Build/Products/Debug/uawake.app`. Check with `pmset -g assertions | grep uawake`.
 - Local builds are ad-hoc signed (`CODE_SIGN_IDENTITY "-"`); Debug omits the hardened runtime, Release has it.
 - `make uitest` runs the UI tests. They need UI automation allowed for Xcode's runner.
-- `make screenshots` regenerates `docs/design/screenshots/` (light and dark).
+- `make screenshots` regenerates `docs/design/screenshots/` (light and dark, over matching backdrops).
+- `make release` builds the DMG and zip (`docs/RELEASING.md`). Without a Developer ID it is an
+  unsigned stub. `scripts/acceptance.sh` and `scripts/perf-sample.sh` produce acceptance evidence.
   `docs/design/reference/` is third-party reference material: gitignored, never commit it.
 - `make strings` syncs `Localizable.xcstrings` with every string the compiler extracted.
   Run it after any UI text change.
@@ -87,7 +89,7 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
 - Battery-level X ends only on battery power at or below X; never "charge up to".
 - Fast user switching (pause/resume) and sleep/wake are 0.1 requirements, via
   `SessionLifecycleMonitor` → `SessionEngine.handle(_:)`.
-- Do not name our clock protocol `Clock` — it shadows Swift's `Clock`; it is `SessionClock`.
+- The clock protocol is `SessionClock`, not `Clock` (which would shadow Swift's).
 - Deadlines are wall-clock `Date`s, so they hold across system sleep.
 - `SystemClock` holds a latency-critical `ProcessInfo` activity only for the final 60 s
   before a deadline. Without it App Nap delays deadlines by up to ~10 s.
@@ -105,8 +107,13 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
   The UI binds with `@AppStorage(SettingsKey.x.rawValue)`.
 - Guards apply at start too: `start` throws `.wouldEndImmediately(cause)` instead of
   creating a session that would end at once.
-- `Logger.warning` shows as level `E` in `log show`; os_log maps warning to error.
-- zsh's builtin `log` shadows `/usr/bin/log`, so call `/usr/bin/log show`.
+- Ad-hoc builds with the hardened runtime can't load Sparkle.framework (library validation needs
+  a Team ID). Local Release runs use `ENABLE_HARDENED_RUNTIME=NO`; Developer ID builds keep it.
+- XCUITest's `launch()` terminates every running uawake (same bundle id). Never run UI tests
+  during a long acceptance run. `-Headless` runs keep isolated settings and show no windows.
+- Popover colours come from `Palette` (WCAG AA checked in ContrastTests). Don't use `.secondary`,
+  `.orange` or other system colours for text on the popover backing.
+- Call `/usr/bin/log show` (zsh's builtin `log` shadows it).
 
 ## Roadmap
 - 0.1 Core: session engine, presets, popover, guards, URL scheme, notifications.

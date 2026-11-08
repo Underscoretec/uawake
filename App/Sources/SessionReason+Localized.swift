@@ -149,6 +149,7 @@ extension MainSection {
         case .safety: String(localized: "Safety", comment: "Main window section")
         case .appearance: String(localized: "Appearance", comment: "Main window section")
         case .general: String(localized: "General", comment: "Main window section")
+        case .updates: String(localized: "Updates", comment: "Main window section")
         case .about: String(localized: "About", comment: "Main window section")
         }
     }
@@ -168,6 +169,7 @@ extension MainSection {
             String(
                 localized: "Startup, the menu bar click and the global shortcut.",
                 comment: "Main window section subtitle")
+        case .updates: String(localized: "How uawake keeps itself up to date.", comment: "Main window section subtitle")
         case .about: String(localized: "Version and credits.", comment: "Main window section subtitle")
         }
     }
@@ -179,7 +181,50 @@ extension MainSection {
         case .safety: "shield.lefthalf.filled"
         case .appearance: "paintbrush"
         case .general: "gearshape"
+        case .updates: "arrow.down.circle"
         case .about: "info.circle"
+        }
+    }
+}
+
+extension Session {
+    /// Row and hero title: the caller's reason, or what the session runs for.
+    var title: String {
+        switch reason {
+        case .custom(let text): text
+        case .rule(let name): name
+        case .standard(_, let condition): condition.sessionTitle
+        }
+    }
+}
+
+extension EndCondition {
+    /// "1 hour", "Indefinite", "Until 18:30", "Until battery 20%".
+    var sessionTitle: String {
+        switch self {
+        case .duration(let duration):
+            duration.formatted(.units(allowed: [.hours, .minutes, .seconds], width: .wide))
+        case .indefinite:
+            String(localized: "Indefinite", comment: "Preset chip: no end time")
+        case .until(let time):
+            String(localized: "Until \(time.formatted)", comment: "Session title; the argument is a time of day")
+        case .batteryLevel(let level):
+            String(
+                localized: "Until battery \((Double(level) / 100).formatted(.percent))",
+                comment: "Session title; the argument is a battery percentage")
+        }
+    }
+}
+
+extension SessionSource {
+    func startedText(at time: String) -> String {
+        switch self {
+        case .manual: String(localized: "Started manually at \(time)", comment: "Session subtitle")
+        case .url: String(localized: "Started from a link at \(time)", comment: "Session subtitle")
+        case .rule: String(localized: "Started by a rule at \(time)", comment: "Session subtitle")
+        case .cli: String(localized: "Started from the command line at \(time)", comment: "Session subtitle")
+        case .shortcut: String(localized: "Started from Shortcuts at \(time)", comment: "Session subtitle")
+        case .mdm: String(localized: "Started by your organisation at \(time)", comment: "Session subtitle")
         }
     }
 }

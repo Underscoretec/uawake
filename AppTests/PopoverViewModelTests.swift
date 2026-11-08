@@ -59,8 +59,9 @@ struct PopoverViewModelTests {
     @Test func rowsShowReasonsAndStop() throws {
         model.start(.duration(.seconds(7200)))
         let row = try #require(model.rows.first)
-        #expect(row.title == "Manual: 2 hours")
-        #expect(row.sourceName == "Manual")
+        #expect(row.title == "2 hours")
+        let time = clock.now.formatted(date: .omitted, time: .shortened)
+        #expect(row.subtitle == "Started manually at \(time)")
         #expect(model.remaining(row, now: clock.now) == "2:00:00")
         model.stop(row.id)
         #expect(model.rows.isEmpty)
@@ -154,6 +155,32 @@ struct PopoverViewModelTests {
         #expect(PopoverViewModel.countdownText(-5) == "0:00")
     }
 
+    @Test func menuBarTextIsMinutesUntilTheFinalMinute() {
+        #expect(PopoverViewModel.menuBarText(6120) == "1:42")
+        #expect(PopoverViewModel.menuBarText(6061) == "1:42")  // 1:41:01 rounds up.
+        #expect(PopoverViewModel.menuBarText(3600) == "1:00")
+        #expect(PopoverViewModel.menuBarText(3599) == "1:00")  // Rounds up: never "60m".
+        #expect(PopoverViewModel.menuBarText(3540) == "59m")
+        #expect(PopoverViewModel.menuBarText(2520) == "42m")
+        #expect(PopoverViewModel.menuBarText(61) == "2m")
+        #expect(PopoverViewModel.menuBarText(60) == "1:00")
+        #expect(PopoverViewModel.menuBarText(42.3) == "0:43")
+        #expect(PopoverViewModel.menuBarText(0) == "0:00")
+    }
+
+    @Test func menuBarRedrawsOnlyWhenTheTextChanges() {
+        #expect(PopoverViewModel.secondsUntilMenuBarChange(6120) == 60)
+        #expect(PopoverViewModel.secondsUntilMenuBarChange(6090) == 30)
+        #expect(PopoverViewModel.secondsUntilMenuBarChange(90) == 30)  // "2m" until 60 s, then "1:00".
+        #expect(PopoverViewModel.secondsUntilMenuBarChange(42.3) == 42.3 - 42)
+        #expect(PopoverViewModel.secondsUntilMenuBarChange(42) == 1)
+        // Every redraw lands where the text actually changes.
+        for remaining in stride(from: 7200.0, to: 0.5, by: -13.7) {
+            let next = remaining - PopoverViewModel.secondsUntilMenuBarChange(remaining)
+            #expect(PopoverViewModel.menuBarText(next - 0.01) != PopoverViewModel.menuBarText(remaining))
+        }
+    }
+
     @Test func countdownShowsTheLatestDeadlineOnlyWhenEverySessionHasOne() throws {
         #expect(model.countdown(now: clock.now) == nil)
         model.start(.duration(.seconds(600)))
@@ -167,7 +194,7 @@ struct PopoverViewModelTests {
     @Test func statusAccessibilityLabel() {
         #expect(model.statusAccessibilityLabel(now: clock.now) == "uawake: off")
         model.start(.duration(.seconds(90)))
-        #expect(model.statusAccessibilityLabel(now: clock.now) == "uawake: keeping your Mac awake, 1:30 left")
+        #expect(model.statusAccessibilityLabel(now: clock.now) == "uawake: keeping your Mac awake, 2m left")
         model.start(.indefinite)
         #expect(model.statusAccessibilityLabel(now: clock.now) == "uawake: keeping your Mac awake")
     }
@@ -253,6 +280,57 @@ struct PopoverViewModelTests {
         #expect(model.keptAwakeToday(now: now, calendar: calendar) == .seconds(2700))
         #expect(PopoverViewModel.keptAwakeText(.seconds(12_000)) == "3h 20m")
         #expect(PopoverViewModel.keptAwakeText(.seconds(0)) == "0m")
+    }
+
+    @Test func keptAwakeTodayExcludesPausedTime() throws {
+        model.start(.indefinite)
+        let session = try #require(engine.sessions.first)
+        model.handle(.started(session), now: clock.now)
+        var paused = session
+        paused.state = .paused(remaining: nil)
+        model.handle(.paused(paused), now: clock.now + 600)  // 10 min awake.
+        model.handle(.resumed(session), now: clock.now + 1800)  // 20 min paused.
+        var ended = session
+        ended.state = .ended(.stoppedByUser)
+        model.handle(.ended(ended), now: clock.now + 2400)  // 10 more min awake.
+        #expect(model.keptAwakeToday(now: clock.now + 3000) == .seconds(1200))
+    }
+
+    @Test func titlesAndSubtitles() throws {
+        try engine.start(SessionRequest(source: .url, reason: .custom("Render"), endCondition: .indefinite))
+        try engine.start(
+            SessionRequest(
+                source: .url, reason: .standard(.url, .until(ClockTime(hour: 18, minute: 30)!)),
+                endCondition: .until(ClockTime(hour: 18, minute: 30)!)))
+        #expect(model.rows[0].title == "Render")
+        #expect(model.rows[0].subtitle.hasPrefix("Started from a link at "))
+        #expect(model.rows[1].title.hasPrefix("Until "))
+        #expect(EndCondition.indefinite.sessionTitle == "Indefinite")
+        #expect(EndCondition.batteryLevel(20).sessionTitle == "Until battery 20%")
+    }
+
+    @Test func singleSessionMovesIntoTheHero() throws {
+        #expect(!model.showsSessionList)
+        model.start(.duration(.seconds(3600)))
+        #expect(model.singleRow?.title == "1 hour")
+        #expect(!model.showsSessionList)
+        try engine.start(SessionRequest(source: .url, reason: .custom("x"), endCondition: .indefinite))
+        #expect(model.singleRow == nil)
+        #expect(model.showsSessionList)
+    }
+
+    @Test func singlePausedSessionStaysListed() throws {
+        model.start(.duration(.seconds(3600)))
+        engine.handle(.userSessionDidResignActive)
+        #expect(model.showsSessionList)
+    }
+
+    @Test func selectedPresetFollowsTheManualSession() throws {
+        #expect(model.currentManualCondition == nil)
+        model.start(.duration(.seconds(1800)))
+        #expect(model.currentManualCondition == .duration(.seconds(1800)))
+        try engine.start(SessionRequest(source: .url, reason: .custom("x"), endCondition: .indefinite))
+        #expect(model.currentManualCondition == .duration(.seconds(1800)))  // URL sessions don't count.
     }
 
     @Test func keptAwakeTodayIncludesActiveSessions() {

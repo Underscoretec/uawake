@@ -4,7 +4,7 @@ import UAwakeCore
 
 /// Sections of the main window's sidebar. Rules (1.0) and Diagnostics (1.2) join later.
 enum MainSection: String, CaseIterable, Hashable, Identifiable {
-    case overview, durations, safety, appearance, general, about
+    case overview, durations, safety, appearance, general, updates, about
     var id: Self { self }
 }
 
@@ -79,9 +79,12 @@ struct StatusChip: Identifiable, Equatable {
 
 struct SessionRow: Identifiable, Equatable {
     let id: Session.ID
+    /// The duration ("1 hour") or the caller's reason ("Render"); no source prefix.
     let title: String
+    /// "Started manually at 9:50", "Started from a link at 9:50".
+    let subtitle: String
     let source: SessionSource
-    let sourceName: String
+    let endCondition: EndCondition
     /// The session's own end (duration or until-time); `nil` for indefinite and battery-level.
     let deadline: Date?
     let isPaused: Bool
@@ -90,9 +93,10 @@ struct SessionRow: Identifiable, Equatable {
 
     init(_ session: Session) {
         id = session.id
-        title = session.reason.localizedDescription
+        title = session.title
+        subtitle = session.source.startedText(at: session.startedAt.formatted(date: .omitted, time: .shortened))
         source = session.source
-        sourceName = session.source.localizedName
+        endCondition = session.endCondition
         isPaused = session.state != .active
         canExtend = session.endCondition.hasOwnDeadline
         deadline = canExtend ? session.deadline : nil
@@ -140,15 +144,63 @@ final class PopoverViewModel {
         engine.sessions.map(SessionRow.init)
     }
 
+    /// The only session, when there is exactly one: the hero shows it and the list hides.
+    var singleRow: SessionRow? {
+        let rows = rows
+        return rows.count == 1 ? rows[0] : nil
+    }
+
+    /// The list shows with 2+ sessions, or a single paused one (the hero is idle then).
+    var showsSessionList: Bool {
+        let count = engine.sessions.count
+        return count >= 2 || (count == 1 && !isAwake)
+    }
+
+    /// The running manual session's end condition, for the selected preset chip.
+    var currentManualCondition: EndCondition? {
+        let manual = engine.sessions.filter { $0.source == .manual }
+        return manual.count == 1 ? manual[0].endCondition : nil
+    }
+
     /// Time until the Mac may sleep again: the latest deadline, shown only when every
     /// active session has its own deadline. `nil` while any indefinite or battery-level
     /// session runs, or when nothing is active.
     func countdown(now: Date) -> String? {
+        countdownRemaining(now: now).map(Self.countdownText)
+    }
+
+    /// Seconds until the last timed session ends, under the same rule as ``countdown(now:)``.
+    func countdownRemaining(now: Date) -> TimeInterval? {
         let active = engine.sessions.filter { $0.state == .active }
         guard !active.isEmpty, active.allSatisfy({ $0.endCondition.hasOwnDeadline }),
             let latest = active.compactMap(\.deadline).max()
         else { return nil }
-        return Self.countdownText(latest.timeIntervalSince(now))
+        return latest.timeIntervalSince(now)
+    }
+
+    /// The menu bar's coarser countdown (see ``menuBarText(_:)``).
+    func menuBarCountdown(now: Date) -> String? {
+        countdownRemaining(now: now).map(Self.menuBarText)
+    }
+
+    /// Menu bar countdown: `1:42` (hours and minutes) from an hour, `42m` under an hour, and
+    /// `0:42` only in the final 60 seconds. Rounds up, so it reads 0:00 only at the end.
+    /// Redrawing the menu bar every second cost ~0.9% CPU; this redraws once a minute.
+    static func menuBarText(_ remaining: TimeInterval) -> String {
+        let seconds = max(0, Int(remaining.rounded(.up)))
+        if seconds <= 60 { return Duration.seconds(seconds).formatted(.time(pattern: .minuteSecond)) }
+        let minutes = (seconds + 59) / 60
+        if minutes >= 60 { return Duration.seconds(minutes * 60).formatted(.time(pattern: .hourMinute)) }
+        return Duration.seconds(minutes * 60).formatted(.units(allowed: [.minutes], width: .narrow))
+    }
+
+    /// How long until ``menuBarText(_:)`` changes, so the menu bar redraws only then.
+    static func secondsUntilMenuBarChange(_ remaining: TimeInterval) -> TimeInterval {
+        guard remaining > 0 else { return 1 }
+        let seconds = remaining.rounded(.up)
+        if seconds <= 60 { return remaining - (seconds - 1) }
+        let minutes = (seconds / 60).rounded(.up)
+        return remaining - (minutes - 1) * 60
     }
 
     func remaining(_ row: SessionRow, now: Date) -> String? {
@@ -164,7 +216,7 @@ final class PopoverViewModel {
 
     func statusAccessibilityLabel(now: Date) -> String {
         guard isAwake else { return String(localized: "uawake: off", comment: "Menu bar icon, VoiceOver") }
-        if let countdown = countdown(now: now) {
+        if let countdown = menuBarCountdown(now: now) {
             return String(
                 localized: "uawake: keeping your Mac awake, \(countdown) left", comment: "Menu bar icon, VoiceOver")
         }
@@ -230,29 +282,62 @@ final class PopoverViewModel {
     // MARK: Session events
 
     /// Today's ended sessions, for "Kept awake today". In memory only; history comes in 1.2.
-    private var endedIntervals: [DateInterval] = []
+    private var closedIntervals: [DateInterval] = []
+    /// When each session last became active (started or resumed).
+    private var activeSince: [Session.ID: Date] = [:]
+    /// Paused sessions: already closed, so their end must not count from `startedAt`.
+    private var pausedIDs: Set<Session.ID> = []
+    /// Sessions whose events this model has seen; for the rest, count from `startedAt`.
+    private var seenIDs: Set<Session.ID> = []
 
     func handle(_ event: SessionEvent, now: Date = Date()) {
-        guard case .ended(let session) = event else { return }
-        if now > session.startedAt { endedIntervals.append(DateInterval(start: session.startedAt, end: now)) }
+        switch event {
+        case .started(let session):
+            seenIDs.insert(session.id)
+            activeSince[session.id] = session.startedAt
+        case .resumed(let session):
+            pausedIDs.remove(session.id)
+            activeSince[session.id] = now
+        case .paused(let session):
+            close(session, now: now)
+            pausedIDs.insert(session.id)
+        case .aboutToEnd:
+            break
+        case .ended(let session):
+            close(session, now: now)
+            pausedIDs.remove(session.id)
+            addGuardBanner(for: session)
+        }
+    }
+
+    private func close(_ session: Session, now: Date) {
+        seenIDs.insert(session.id)
+        guard !pausedIDs.contains(session.id) else { return }
+        let start = activeSince.removeValue(forKey: session.id) ?? session.startedAt
+        if now > start { closedIntervals.append(DateInterval(start: start, end: now)) }
+    }
+
+    private func addGuardBanner(for session: Session) {
         guard case .ended(let cause) = session.state, let text = cause.guardText(settings: settings) else { return }
         let banner = Banner(
             kind: .guardStop(session.id), tone: .critical, symbol: "stop.circle.fill",
             title: String(localized: "Stopped by \(text.title)", comment: "Banner title: a guard ended a session"),
             message: String(
-                localized: "\(session.reason.localizedDescription) ended. \(text.detail)",
-                comment: "Notification body: reason, then why the guard ended it"),
+                localized: "\(session.title) ended. \(text.detail)",
+                comment: "Banner body: session, then why the guard ended it"),
             section: .safety)
         guardStops = Array(([banner] + guardStops).prefix(3))
     }
 
     /// Time today when at least one session was keeping the Mac awake (overlaps count once).
-    /// Approximate: an ended session counts from its start, including any paused time.
+    /// Paused time is excluded.
     func keptAwakeToday(now: Date, calendar: Calendar = .current) -> Duration {
         let dayStart = calendar.startOfDay(for: now)
-        let live = engine.sessions.filter { $0.state == .active && $0.startedAt < now }
-            .map { DateInterval(start: $0.startedAt, end: now) }
-        let clipped = (endedIntervals + live).compactMap { interval -> DateInterval? in
+        let live = engine.sessions.filter { $0.state == .active }
+            .compactMap { activeSince[$0.id] ?? (seenIDs.contains($0.id) ? nil : $0.startedAt) }
+            .filter { $0 < now }
+            .map { DateInterval(start: $0, end: now) }
+        let clipped = (closedIntervals + live).compactMap { interval -> DateInterval? in
             let start = max(interval.start, dayStart)
             let end = min(interval.end, now)
             return start < end ? DateInterval(start: start, end: end) : nil

@@ -17,24 +17,26 @@ struct PopoverView: View {
                     BannerList(model: model)
                     HeroView(model: model, now: context.date)
                     QuickStartView(model: model, columns: 3)
-                    if !model.rows.isEmpty {
+                    if model.showsSessionList {
                         SessionList(model: model, now: context.date)
                     }
                     StatusStrip(chips: model.statusChips)
                 }
                 .padding(16)
                 Divider()
-                FooterView(model: model, now: context.date)
+                FooterView(model: model, now: context.date, showsQuit: true)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
             }
         }
         .frame(width: 360)
+        // A near-opaque backing keeps text contrast independent of the desktop behind.
+        .background(Color.popoverBacking.opacity(0.95))
     }
 
     private var header: some View {
         HStack(spacing: 12) {
-            Text(verbatim: "uawake").font(.title3.weight(.bold))
+            Text("uawake", comment: "App name in the popover header").font(.title3.weight(.bold))
             Spacer()
             Button {
                 model.openMainWindow(.general)
@@ -51,6 +53,7 @@ struct PopoverView: View {
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
+        .foregroundStyle(Color.secondaryText)
         .font(.system(size: 15, weight: .medium))
     }
 }
@@ -81,7 +84,7 @@ struct HeroView: View {
         }
         .padding(large ? 20 : 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .card(radius: 16, tint: hero.kind == .idle ? nil : (hero.isEndingSoon ? .orange : .green))
+        .card(radius: 16, tint: hero.kind == .idle ? nil : (hero.isEndingSoon ? Tone.caution : Tone.good).color)
     }
 
     private var toggle: some View {
@@ -94,11 +97,11 @@ struct HeroView: View {
     private var idle: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                IconTile(symbol: "moon.zzz.fill", tint: .indigo, size: large ? 44 : 36)
+                IconTile(symbol: "moon.zzz.fill", tint: Color(nsColor: Palette.indigo), size: large ? 44 : 36)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Your Mac can sleep normally").font(large ? .title2.weight(.semibold) : .headline)
                     Text("Keep it awake for a while, or until you turn it off.")
-                        .font(.callout).foregroundStyle(.secondary)
+                        .font(.callout).foregroundStyle(Color.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -108,20 +111,11 @@ struct HeroView: View {
 
     private func active(_ hero: Hero) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                if hero.isEndingSoon {
-                    Label {
-                        Text("Ending soon")
-                    } icon: {
-                        Image(systemName: "hourglass").foregroundStyle(.orange)
-                    }
-                } else {
-                    Label {
-                        Text("Keeping your Mac awake")
-                    } icon: {
-                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                    }
-                }
+            Label {
+                Text(hero.isEndingSoon ? "Ending soon" : "Keeping your Mac awake")
+            } icon: {
+                Image(systemName: hero.isEndingSoon ? "hourglass" : "checkmark.circle.fill")
+                    .foregroundStyle((hero.isEndingSoon ? Tone.caution : Tone.good).color)
             }
             .font(.caption.weight(.semibold))
             HStack(alignment: .firstTextBaseline) {
@@ -135,17 +129,52 @@ struct HeroView: View {
                 }
                 .font(.system(size: large ? 56 : 44, weight: .bold))
                 .monospacedDigit()
-                .foregroundStyle(hero.isEndingSoon ? .orange : .primary)
+                .foregroundStyle(hero.isEndingSoon ? Tone.caution.color : Color.primary)
                 .contentTransition(.numericText(countsDown: true))
                 Spacer()
                 toggle
             }
-            Text(hero.caption).font(.callout).foregroundStyle(.secondary)
+            Text(hero.caption).font(.callout).foregroundStyle(Color.secondaryText)
             if let progress = hero.progress {
-                ThinProgressBar(value: progress, tint: hero.isEndingSoon ? .orange : .green)
+                ThinProgressBar(value: progress, tint: (hero.isEndingSoon ? Tone.caution : Tone.good).color)
                     .padding(.top, 4)
             }
+            if let row = model.singleRow {
+                singleSession(row)
+            }
         }
+    }
+
+    /// With exactly one session the list is hidden: its name and extend buttons live here.
+    private func singleSession(_ row: SessionRow) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(row.title).font(.callout.weight(.medium)).lineLimit(1)
+                Text(row.isPaused ? "\(row.subtitle) · Paused" : row.subtitle)
+                    .font(.caption).foregroundStyle(Color.secondaryText).lineLimit(1)
+            }
+            .accessibilityElement(children: .combine)
+            Spacer(minLength: 4)
+            if row.canExtend {
+                ExtendButtons(row: row, model: model)
+            }
+        }
+        .padding(.top, 6)
+    }
+}
+
+struct ExtendButtons: View {
+    let row: SessionRow
+    let model: PopoverViewModel
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Button("+15 min") { model.extend(row.id, by: .seconds(900)) }
+                .accessibilityLabel(Text("Extend \(row.title) by 15 minutes"))
+            Button("+1 hr") { model.extend(row.id, by: .seconds(3600)) }
+                .accessibilityLabel(Text("Extend \(row.title) by 1 hour"))
+        }
+        .buttonStyle(PillButtonStyle(compact: true))
     }
 }
 
@@ -155,27 +184,33 @@ struct QuickStartView: View {
     @State private var showsUntil = false
 
     var body: some View {
+        let current = model.currentManualCondition
         VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: String(localized: "Keep awake for"))
+            SectionHeader(
+                title: current == nil
+                    ? String(localized: "Keep awake for")
+                    : String(localized: "Change to", comment: "Preset header while a manual session runs"))
             LazyVGrid(
                 columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: columns), alignment: .leading,
                 spacing: 8
             ) {
                 ForEach(model.presets, id: \.self) { preset in
+                    let selected = preset == current
                     Button {
                         model.start(preset)
                     } label: {
                         Text(preset.chipTitle).frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(PillButtonStyle())
+                    .buttonStyle(PillButtonStyle(selected: selected))
                     .accessibilityLabel(Text("Keep awake: \(preset.chipTitle)", comment: "Preset chip, VoiceOver"))
+                    .accessibilityAddTraits(selected ? .isSelected : [])
                 }
                 Button {
                     showsUntil.toggle()
                 } label: {
                     Label("Until…", systemImage: "clock").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(PillButtonStyle(selected: showsUntil))
+                .buttonStyle(PillButtonStyle(selected: showsUntil || current.map(Self.isUntil) == true))
             }
             if showsUntil {
                 HStack {
@@ -195,6 +230,11 @@ struct QuickStartView: View {
             }
         }
     }
+
+    private static func isUntil(_ condition: EndCondition) -> Bool {
+        if case .until = condition { return true }
+        return false
+    }
 }
 
 struct SessionList: View {
@@ -211,7 +251,7 @@ struct SessionList: View {
             VStack(spacing: 0) {
                 if rows.isEmpty {
                     Text("No active sessions")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondaryText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(14)
                 }
@@ -241,14 +281,10 @@ struct SessionCardRow: View {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(row.title).font(.body.weight(.medium)).lineLimit(1)
-                        HStack(spacing: 6) {
-                            Text(row.sourceName)
-                            if row.isPaused {
-                                Text("Paused")
-                            }
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        Text(row.isPaused ? "\(row.subtitle) · Paused" : row.subtitle)
+                            .font(.caption)
+                            .foregroundStyle(Color.secondaryText)
+                            .lineLimit(1)
                     }
                     .accessibilityElement(children: .combine)
                     Spacer(minLength: 8)
@@ -261,7 +297,7 @@ struct SessionCardRow: View {
                         }
                         .font(.callout.weight(.medium))
                         .monospacedDigit()
-                        .foregroundStyle(endingSoon ? .orange : .secondary)
+                        .foregroundStyle(endingSoon ? Tone.caution.color : Color.secondaryText)
                     }
                     Button {
                         model.stop(row.id)
@@ -270,17 +306,11 @@ struct SessionCardRow: View {
                     }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.secondaryText)
                     .accessibilityLabel(Text("Stop \(row.title)"))
                 }
                 if row.canExtend {
-                    HStack(spacing: 6) {
-                        Button("+15 min") { model.extend(row.id, by: .seconds(900)) }
-                            .accessibilityLabel(Text("Extend \(row.title) by 15 minutes"))
-                        Button("+1 hr") { model.extend(row.id, by: .seconds(3600)) }
-                            .accessibilityLabel(Text("Extend \(row.title) by 1 hour"))
-                    }
-                    .buttonStyle(PillButtonStyle(compact: true))
+                    ExtendButtons(row: row, model: model)
                 }
             }
         }
@@ -291,6 +321,7 @@ struct SessionCardRow: View {
 struct FooterView: View {
     let model: PopoverViewModel
     let now: Date
+    var showsQuit = false
 
     var body: some View {
         HStack {
@@ -301,11 +332,13 @@ struct FooterView: View {
                 Image(systemName: "clock.arrow.circlepath")
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.secondaryText)
             Spacer()
-            Button("Quit uawake") { NSApplication.shared.terminate(nil) }
-                .buttonStyle(PillButtonStyle(compact: true))
-                .keyboardShortcut("q")
+            if showsQuit {
+                Button("Quit uawake") { NSApplication.shared.terminate(nil) }
+                    .buttonStyle(PillButtonStyle(compact: true))
+                    .keyboardShortcut("q")
+            }
         }
     }
 }
