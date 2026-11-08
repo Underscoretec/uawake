@@ -36,7 +36,8 @@ struct SettingsTests {
             SettingsKey.allCases.map(\.rawValue) == [
                 "BatteryGuardEnabled", "BatteryGuardThreshold", "LowPowerModeGuardEnabled", "ThermalGuardEnabled",
                 "MaximumCapEnabled", "MaximumCapHours", "DurationPresets", "PrimaryClickAction", "EndWarningMinutes",
-                "ShowsCountdown", "UpdateChannel",
+                "ShowsCountdown", "UpdateChannel", "IconStyle", "GlobalShortcutKeyCode", "GlobalShortcutModifiers",
+                "FirstRunCompleted",
             ])
     }
 
@@ -82,6 +83,24 @@ struct SettingsTests {
         settings.updateChannel = .beta
         #expect(settings.showsCountdown)
         #expect(defaults.string(forKey: "UpdateChannel") == "beta")
+    }
+
+    @Test func appearanceShortcutAndFirstRun() {
+        #expect(settings.iconStyle == .cup)
+        #expect(settings.globalShortcut == nil)
+        #expect(!settings.firstRunCompleted)
+        settings.iconStyle = .bolt
+        settings.globalShortcut = GlobalShortcut(keyCode: 32, carbonModifiers: 0x1900)
+        settings.firstRunCompleted = true
+        #expect(defaults.string(forKey: "IconStyle") == "bolt")
+        #expect(settings.globalShortcut == GlobalShortcut(keyCode: 32, carbonModifiers: 0x1900))
+        #expect(settings.firstRunCompleted)
+        defaults.set(0, forKey: "GlobalShortcutModifiers")  // No modifier: unusable.
+        #expect(settings.globalShortcut == nil)
+        settings.globalShortcut = nil
+        #expect(defaults.object(forKey: "GlobalShortcutKeyCode") == nil)
+        defaults.set("rainbow", forKey: "IconStyle")
+        #expect(settings.iconStyle == .cup)
     }
 
     // MARK: Presets

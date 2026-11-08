@@ -60,6 +60,19 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.underscoretec.uawakeTests
     dependencies:
       - target: uawake
+      - package: UAwakeCore
+        product: UAwakeCoreTesting
+  uawakeUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources: [AppUITests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.underscoretec.uawakeUITests
+        TEST_TARGET_NAME: uawake
+    dependencies:
+      - target: uawake
   # Developer tool, never shipped: see docs/SANDBOX-SPIKE.md.
   SandboxProbe:
     type: application
@@ -112,3 +125,11 @@ schemes:
         uawake: all
     test:
       targets: [uawakeTests]
+  # UI tests need macOS to allow UI automation for Xcode's test runner: `make uitest`.
+  uawakeUITests:
+    build:
+      targets:
+        uawake: all
+        uawakeUITests: [test]
+    test:
+      targets: [uawakeUITests]

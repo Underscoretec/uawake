@@ -57,3 +57,38 @@ extension ClockTime {
         return date.formatted(date: .omitted, time: .shortened)
     }
 }
+
+extension EndCondition {
+    /// Short preset label: "15 min", "1 hr, 30 min", "Indefinite".
+    var chipTitle: String {
+        switch self {
+        case .indefinite:
+            String(localized: "Indefinite", comment: "Preset chip: no end time")
+        case .duration(let duration):
+            duration.formatted(.units(allowed: [.hours, .minutes, .seconds], width: .abbreviated))
+        case .until, .batteryLevel:
+            localizedDescription
+        }
+    }
+}
+
+extension IconStyle {
+    var localizedName: String {
+        switch self {
+        case .cup: String(localized: "Cup", comment: "Menu bar icon style")
+        case .eye: String(localized: "Eye", comment: "Menu bar icon style")
+        case .bolt: String(localized: "Bolt", comment: "Menu bar icon style")
+        }
+    }
+}
+
+extension PresetError {
+    var localizedMessage: String {
+        switch self {
+        case .duplicate: String(localized: "That preset already exists.", comment: "Durations settings error")
+        case .tooMany: String(localized: "You can have up to 12 presets.", comment: "Durations settings error")
+        case .unsupported, .indexOutOfRange:
+            String(localized: "That preset can't be used.", comment: "Durations settings error")
+        }
+    }
+}

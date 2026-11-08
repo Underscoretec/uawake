@@ -27,6 +27,8 @@ public struct UAwakeSettings {
             SettingsKey.endWarningMinutes.rawValue: 5,
             SettingsKey.showsCountdown.rawValue: false,
             SettingsKey.updateChannel.rawValue: UpdateChannel.stable.rawValue,
+            SettingsKey.iconStyle.rawValue: IconStyle.cup.rawValue,
+            SettingsKey.firstRunCompleted.rawValue: false,
         ])
     }
 
@@ -105,6 +107,37 @@ public struct UAwakeSettings {
     public var showsCountdown: Bool {
         get { bool(.showsCountdown, default: false) }
         nonmutating set { set(newValue, .showsCountdown) }
+    }
+
+    public var iconStyle: IconStyle {
+        get { defaults.string(forKey: SettingsKey.iconStyle.rawValue).flatMap(IconStyle.init) ?? .cup }
+        nonmutating set { set(newValue.rawValue, .iconStyle) }
+    }
+
+    /// `nil` when no shortcut is set (the default).
+    public var globalShortcut: GlobalShortcut? {
+        get {
+            guard let keyCode = defaults.object(forKey: SettingsKey.globalShortcutKeyCode.rawValue) as? Int,
+                let modifiers = defaults.object(forKey: SettingsKey.globalShortcutModifiers.rawValue) as? Int,
+                (0...0xFFFF).contains(keyCode), modifiers > 0
+            else { return nil }
+            return GlobalShortcut(keyCode: keyCode, carbonModifiers: modifiers)
+        }
+        nonmutating set {
+            if let newValue {
+                set(newValue.keyCode, .globalShortcutKeyCode)
+                set(newValue.carbonModifiers, .globalShortcutModifiers)
+            } else {
+                defaults.removeObject(forKey: SettingsKey.globalShortcutKeyCode.rawValue)
+                defaults.removeObject(forKey: SettingsKey.globalShortcutModifiers.rawValue)
+            }
+        }
+    }
+
+    /// Set when the welcome window is dismissed. An MDM profile can force it to skip first run.
+    public var firstRunCompleted: Bool {
+        get { bool(.firstRunCompleted, default: false) }
+        nonmutating set { set(newValue, .firstRunCompleted) }
     }
 
     public var updateChannel: UpdateChannel {
@@ -192,6 +225,27 @@ public enum SettingsKey: String, CaseIterable, Sendable {
     case endWarningMinutes = "EndWarningMinutes"
     case showsCountdown = "ShowsCountdown"
     case updateChannel = "UpdateChannel"
+    case iconStyle = "IconStyle"
+    case globalShortcutKeyCode = "GlobalShortcutKeyCode"
+    case globalShortcutModifiers = "GlobalShortcutModifiers"
+    case firstRunCompleted = "FirstRunCompleted"
+}
+
+/// Menu bar icon family. The app maps each to an active and an inactive SF Symbol.
+public enum IconStyle: String, CaseIterable, Sendable {
+    case cup, eye, bolt
+}
+
+/// A global shortcut as a virtual key code and a Carbon modifier mask
+/// (`cmdKey | optionKey | controlKey | shiftKey`). At least one modifier.
+public struct GlobalShortcut: Hashable, Sendable {
+    public let keyCode: Int
+    public let carbonModifiers: Int
+
+    public init(keyCode: Int, carbonModifiers: Int) {
+        self.keyCode = keyCode
+        self.carbonModifiers = carbonModifiers
+    }
 }
 
 public enum UpdateChannel: String, CaseIterable, Sendable {

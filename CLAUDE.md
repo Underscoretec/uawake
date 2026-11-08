@@ -70,7 +70,9 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
 - One package: `cd Packages/<Name> && swift test`.
 - App: `build/DerivedData/Build/Products/Debug/uawake.app`. Check with `pmset -g assertions | grep uawake`.
 - Local builds are ad-hoc signed (`CODE_SIGN_IDENTITY "-"`); Debug omits the hardened runtime, Release has it.
-- New UI strings: add the key to `App/Resources/Localizable.xcstrings` (Xcode adds them when building in the IDE).
+- `make uitest` runs the UI tests. They need UI automation allowed for Xcode's runner.
+- `make strings` syncs `Localizable.xcstrings` with every string the compiler extracted.
+  Run it after any UI text change.
 
 ## Critical gotchas
 - Assertion names must be `uawake: <reason>` so they appear in `pmset -g assertions`.
@@ -85,8 +87,13 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
   `SessionLifecycleMonitor` → `SessionEngine.handle(_:)`.
 - Do not name our clock protocol `Clock` — it shadows Swift's `Clock`; it is `SessionClock`.
 - Deadlines are wall-clock `Date`s, so they hold across system sleep.
-- `SystemClock` holds a latency-critical `ProcessInfo` activity while waiting. Without it
-  App Nap delays deadlines by up to ~10 s in the background menu bar app.
+- `SystemClock` holds a latency-critical `ProcessInfo` activity only for the final 60 s
+  before a deadline. Without it App Nap delays deadlines by up to ~10 s.
+- The app uses the AppKit lifecycle (`main.swift`, `AppDelegate`), not a SwiftUI `App`:
+  `NSStatusItem` + `NSPopover` because `MenuBarExtra` can't tell primary from secondary clicks.
+  Windows host SwiftUI via `HostingWindowController`.
+- `-UITesting` launches with throwaway settings, no welcome window, and the popover
+  content in a normal window. When hosting unit tests the app shows nothing.
 - Settings keys are public API for MDM (`docs/SETTINGS.md`): add keys, never rename them.
   The UI binds with `@AppStorage(SettingsKey.x.rawValue)`.
 - Guards apply at start too: `start` throws `.wouldEndImmediately(cause)` instead of

@@ -60,8 +60,10 @@ The IOKit conformer lives in UAwakeSystem so Core stays Foundation-only.
 
 ## SessionClock (`UAwakeCore/SessionClock.swift`)
 `now` and `sleep(until:)`. The system conformer uses `Date()` and a
-`ContinuousClock` sleep (which counts time asleep); the fake advances time manually
-and resumes sleepers whose deadline has passed, making timed tests instant.
+`ContinuousClock` sleep (which counts time asleep). It sleeps relaxed until 60 s before
+the deadline, then precisely under a latency-critical activity, because App Nap would
+otherwise delay a background menu bar app's deadlines by up to ~10 s. The fake advances
+time manually and resumes sleepers whose deadline has passed, making timed tests instant.
 
 **Threading:** `Sendable`.
 

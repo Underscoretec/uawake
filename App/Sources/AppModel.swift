@@ -1,18 +1,35 @@
 import AppKit
+import ServiceManagement
 import UAwakeCore
 import UAwakeIPC
 import UAwakeSystem
+import os
 
-/// Owns the engine and connects it to settings, system monitors and the URL scheme.
+/// Owns the engine and connects it to settings, system monitors, the URL scheme,
+/// the global shortcut and notifications.
 @MainActor
 final class AppModel {
-    static let shared = AppModel()
+    static let logger = Logger(subsystem: "com.underscoretec.uawake", category: "app")
 
     let engine: DefaultSessionEngine
-    let settings = UAwakeSettings()
+    let settings: UAwakeSettings
+    let popover: PopoverViewModel
+    let notifications: NotificationController
+    let hotKey = HotKeyController()
+    /// Why the current shortcut could not be registered, or `nil`.
+    private(set) var shortcutProblem: String?
 
-    private init() {
-        let settings = settings
+    /// `uiTesting` keeps settings in a throwaway domain, so UI tests never touch real settings.
+    init(uiTesting: Bool = false) {
+        let defaults: UserDefaults
+        if uiTesting, let testDefaults = UserDefaults(suiteName: "com.underscoretec.uawake.uitests") {
+            testDefaults.removePersistentDomain(forName: "com.underscoretec.uawake.uitests")
+            defaults = testDefaults
+        } else {
+            defaults = .standard
+        }
+        let settings = UAwakeSettings(defaults: defaults)
+        self.settings = settings
         let engine = DefaultSessionEngine(
             assertions: IOKitAssertionProvider(),
             clock: SystemClock(),
@@ -21,31 +38,61 @@ final class AppModel {
             endWarning: settings.endWarning
         )
         self.engine = engine
+        popover = PopoverViewModel(engine: engine, settings: settings)
+        notifications = NotificationController(engine: engine, settings: settings)
+
         let deviceState = SystemDeviceStateMonitor()
         let lifecycle = SystemSessionLifecycleMonitor()
         Task { for await state in deviceState.updates() { engine.apply(state) } }
         Task { for await event in lifecycle.events() { engine.handle(event) } }
+        Task { [notifications] in for await event in engine.events() { notifications.handle(event) } }
         // Posted for every in-process change, including @AppStorage writes from Settings.
-        Task {
+        Task { [weak self] in
             for await _ in NotificationCenter.default.notifications(named: UserDefaults.didChangeNotification) {
                 engine.apply(settings)
+                self?.registerShortcut()
             }
         }
-    }
-
-    /// The primary-click session.
-    var defaultRequest: SessionRequest {
-        let condition = settings.primaryClickAction
-        return SessionRequest(source: .manual, reason: .standard(.manual, condition), endCondition: condition)
+        hotKey.onPress = { [weak self] in self?.popover.toggle() }
+        registerShortcut()
     }
 
     func open(_ url: URL) {
         URLRouter.route(url, to: engine, defaultCondition: settings.primaryClickAction)
     }
-}
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
-    func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls { AppModel.shared.open(url) }
+    /// Ends every session with `.appQuit` so history (from 1.2) records why.
+    func quit() {
+        for session in engine.sessions { engine.stop(session.id, cause: .appQuit) }
+    }
+
+    private var registeredShortcut: GlobalShortcut?
+
+    func registerShortcut() {
+        let shortcut = settings.globalShortcut
+        guard shortcut != registeredShortcut else { return }
+        registeredShortcut = shortcut
+        hotKey.unregister()
+        shortcutProblem = nil
+        guard let shortcut else { return }
+        let status = hotKey.register(shortcut)
+        if status != noErr {
+            shortcutProblem = String(
+                localized: "That shortcut is already in use. Choose another.",
+                comment: "Settings: global shortcut could not be registered")
+            Self.logger.warning("Shortcut registration failed: \(status)")
+        }
+    }
+
+    // MARK: Launch at login
+
+    var launchesAtLogin: Bool { SMAppService.mainApp.status == .enabled }
+
+    func setLaunchesAtLogin(_ enabled: Bool) {
+        do {
+            if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+        } catch {
+            Self.logger.error("Launch at login change failed: \(String(describing: error), privacy: .public)")
+        }
     }
 }

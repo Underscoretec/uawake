@@ -1,27 +1,111 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ ended. %@": {
+      "comment": "Notification body: reason, then why the guard ended it"
+    },
+    "%@ ends in %@.": {
+      "comment": "Notification body: reason, time left"
+    },
+    "%@ left": {
+      "comment": "Popover: time remaining"
+    },
     "%@: %@": {
       "comment": "Session reason: source, then when it ends, e.g. Manual: 2 hours"
     },
+    "+1 hr": {},
+    "+15 min": {},
     "About": {},
+    "Add": {},
+    "Add a duration": {},
     "Appearance": {},
+    "Applies to indefinite and battery-level sessions, counted from when they start.": {},
+    "Battery guard": {
+      "comment": "Notification title"
+    },
+    "Battery limit: %lld%%": {},
+    "Bolt": {
+      "comment": "Menu bar icon style"
+    },
     "CLI": {
       "comment": "Session source"
     },
-    "Coming in 0.1.": {},
-    "Copyright © 2026 Underscore Technology Pvt. Ltd. MIT licence.": {},
+    "Cancel": {},
+    "Change duration": {},
+    "Clear": {},
+    "Clear shortcut": {},
+    "Click the icon to turn uawake on or off. Option-click or right-click it for durations and settings.": {},
+    "Click the menu bar icon to keep awake for": {},
+    "Click to turn uawake on or off. Option-click or right-click for options.": {
+      "comment": "VoiceOver help for the menu bar icon"
+    },
+    "Created by Abhijit Roy · Underscore Technology": {},
+    "Cup": {
+      "comment": "Menu bar icon style"
+    },
+    "Done": {},
     "Durations": {},
+    "Edit": {},
+    "Edit %@": {},
+    "Extend %@ by 1 hour": {},
+    "Extend %@ by 15 minutes": {},
+    "Eye": {
+      "comment": "Menu bar icon style"
+    },
+    "Find uawake in the menu bar": {},
+    "Free and open source under the MIT licence.": {},
     "General": {},
+    "Indefinite": {
+      "comment": "Preset chip: no end time"
+    },
+    "It reached the %lld-hour limit.": {
+      "comment": "Notification detail"
+    },
     "Keep awake": {},
+    "Keep awake for": {},
+    "Keep awake until the chosen time": {},
+    "Keep awake: %@": {
+      "comment": "Preset chip, VoiceOver"
+    },
+    "Limit sessions without an end time": {},
+    "Low Power Mode": {
+      "comment": "Notification title"
+    },
+    "Low Power Mode is on.": {
+      "comment": "Popover: start refused"
+    },
+    "Low Power Mode turned on.": {
+      "comment": "Notification detail"
+    },
     "Managed": {
       "comment": "Session source: set by the organisation"
     },
     "Manual": {
       "comment": "Session source"
     },
+    "Maximum duration": {
+      "comment": "Notification title"
+    },
+    "Maximum: %lld hours": {},
+    "Menu bar icon": {},
+    "Move %@ down": {},
+    "Move %@ up": {},
+    "Move Down": {},
+    "Move Up": {},
     "No active sessions": {},
+    "Notifications are off. You can turn them on in System Settings.": {},
+    "Notifications are on.": {},
+    "Open Safety Settings": {},
+    "Open uawake at login": {},
+    "Paused": {},
+    "Presets": {},
     "Quit uawake": {},
+    "Record Shortcut": {},
+    "Record a shortcut": {},
+    "Recording. Type a shortcut, or press Escape to cancel.": {},
+    "Remove": {},
+    "Remove %@": {},
+    "Restore Defaults": {},
     "Rule": {
       "comment": "Session source"
     },
@@ -29,21 +113,98 @@
       "comment": "Session reason for a rule; the argument is the rule name"
     },
     "Safety": {},
+    "Save": {},
+    "Session ending soon": {
+      "comment": "Notification title"
+    },
     "Settings…": {},
     "Shortcut": {
       "comment": "Session source"
     },
+    "Shortcut %@. Press to change.": {},
+    "Shortcut to turn uawake on or off": {},
+    "Show remaining time in the menu bar": {},
+    "Start": {},
+    "Stop": {},
+    "Stop %@": {},
+    "Stop at low battery": {},
+    "Stop when Low Power Mode turns on": {},
+    "Stop when your Mac gets too warm": {},
+    "That preset already exists.": {
+      "comment": "Durations settings error"
+    },
+    "That preset can't be used.": {
+      "comment": "Durations settings error"
+    },
+    "That session can't be changed.": {
+      "comment": "Popover: action refused"
+    },
+    "That session would end straight away.": {
+      "comment": "Popover: start refused"
+    },
+    "That shortcut is already in use. Choose another.": {
+      "comment": "Settings: global shortcut could not be registered"
+    },
+    "The battery is already at or below that level.": {
+      "comment": "Popover: start refused"
+    },
+    "The battery is at or below the %lld%% safety limit.": {
+      "comment": "Popover: start refused by the battery guard"
+    },
+    "The battery limit applies only on battery power.": {},
+    "The battery reached the %lld%% limit.": {
+      "comment": "Notification detail"
+    },
+    "The uawake icon may be hidden by the camera notch or a full menu bar. To make room, hold Command and drag other icons out of the menu bar, or quit menu bar apps you don't need. You can also set a shortcut to turn uawake on in Settings.": {},
+    "Thermal guard": {
+      "comment": "Notification title"
+    },
+    "Turn On Notifications": {},
+    "Type a shortcut…": {},
     "URL": {
       "comment": "Session source"
     },
-    "Updates": {},
-    "Version %@": {},
+    "Until": {},
+    "Use hours, minutes and seconds in that order, like 45m or 1h30m.": {
+      "comment": "Durations settings: invalid entry"
+    },
+    "Version %@ (%@)": {},
+    "Warn %lld min before a session ends": {},
+    "Warn before a session ends: off": {},
+    "Welcome to uawake": {
+      "comment": "Welcome window title"
+    },
+    "You can have up to 12 presets.": {
+      "comment": "Durations settings error"
+    },
+    "Your Mac got too warm.": {
+      "comment": "Notification detail"
+    },
+    "Your Mac is too warm to keep awake right now.": {
+      "comment": "Popover: start refused"
+    },
+    "e.g. 45m, 1h30m or indefinite": {},
     "indefinite": {
       "comment": "Session with no end time"
     },
+    "macOS refused to keep your Mac awake (error %d).": {
+      "comment": "Popover: IOKit error"
+    },
+    "uawake Settings": {
+      "comment": "Settings window title"
+    },
+    "uawake keeps your Mac awake when you need it: downloads, presentations, calls and long tasks. It stops by itself at low battery, in Low Power Mode or when your Mac gets too warm.": {},
+    "uawake tells you before a session ends and when a safety guard stops one.": {},
     "uawake — keep your Mac awake": {},
-    "uawake: keeping your Mac awake": {},
-    "uawake: off": {},
+    "uawake: keeping your Mac awake": {
+      "comment": "Menu bar icon, VoiceOver"
+    },
+    "uawake: keeping your Mac awake, %@ left": {
+      "comment": "Menu bar icon, VoiceOver"
+    },
+    "uawake: off": {
+      "comment": "Menu bar icon, VoiceOver"
+    },
     "until %@": {
       "comment": "Session end; the argument is a time of day"
     },
