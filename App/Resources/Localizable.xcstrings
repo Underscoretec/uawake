@@ -1,0 +1,55 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@: %@": {
+      "comment": "Session reason: source, then when it ends, e.g. Manual: 2 hours"
+    },
+    "About": {},
+    "Appearance": {},
+    "CLI": {
+      "comment": "Session source"
+    },
+    "Coming in 0.1.": {},
+    "Copyright © 2026 Underscore Technology Pvt. Ltd. MIT licence.": {},
+    "Durations": {},
+    "General": {},
+    "Keep awake": {},
+    "Managed": {
+      "comment": "Session source: set by the organisation"
+    },
+    "Manual": {
+      "comment": "Session source"
+    },
+    "No active sessions": {},
+    "Quit uawake": {},
+    "Rule": {
+      "comment": "Session source"
+    },
+    "Rule: %@": {
+      "comment": "Session reason for a rule; the argument is the rule name"
+    },
+    "Safety": {},
+    "Settings…": {},
+    "Shortcut": {
+      "comment": "Session source"
+    },
+    "URL": {
+      "comment": "Session source"
+    },
+    "Updates": {},
+    "Version %@": {},
+    "indefinite": {
+      "comment": "Session with no end time"
+    },
+    "uawake — keep your Mac awake": {},
+    "uawake: keeping your Mac awake": {},
+    "uawake: off": {},
+    "until %@": {
+      "comment": "Session end; the argument is a time of day"
+    },
+    "until battery %@": {
+      "comment": "Session end; the argument is a battery percentage"
+    }
+  },
+  "version": "1.0"
+}

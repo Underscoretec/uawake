@@ -52,7 +52,9 @@ public struct SessionRequest: Equatable, Sendable {
     public var modes: Set<AwakeMode>
     public var endCondition: EndCondition
 
-    public init(source: SessionSource, reason: SessionReason, modes: Set<AwakeMode> = [.system], endCondition: EndCondition) {
+    public init(
+        source: SessionSource, reason: SessionReason, modes: Set<AwakeMode> = [.system], endCondition: EndCondition
+    ) {
         self.source = source
         self.reason = reason
         self.modes = modes

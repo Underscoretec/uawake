@@ -45,6 +45,8 @@ Dependency direction: App → IPC, System → Core. Core imports nothing but Fou
   (`core`, `system`, `ipc`, `app`). Expected failures (e.g. an invalid URL) log at `.warning`, not `.error`.
 - `SessionEngine` is `@MainActor`; providers, clocks, guards and monitors are `Sendable`; monitors deliver `AsyncStream`s.
 - Only the engine holds assertions. Entry points start/stop/limit sessions; they never call IOKit.
+- IOKit and AppKit conformers (`IOKitAssertionProvider`, system monitors) live in UAwakeSystem;
+  Core stays Foundation-only. The app wires monitors to `engine.apply`/`engine.handle`.
 
 ## Testing
 - Swift Testing in each package's test target.
@@ -61,8 +63,13 @@ Never fetch, read, clone or reference KeepingYouAwake source or assets. Work onl
 `docs/SPEC.md` and Apple documentation.
 
 ## Build and test
-_Filled in during Phase B (Makefile: generate, build, test, lint, clean)._
-For now, each package builds alone: `cd Packages/<Name> && swift build`.
+Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml` and not committed.
+- `make generate` / `make build` / `make test` (each package's `swift test` with warnings as
+  errors, then the app tests) / `make lint` / `make format` / `make clean`.
+- One package: `cd Packages/<Name> && swift test`.
+- App: `build/DerivedData/Build/Products/Debug/uawake.app`. Check with `pmset -g assertions | grep uawake`.
+- Local builds are ad-hoc signed (`CODE_SIGN_IDENTITY "-"`); Debug omits the hardened runtime, Release has it.
+- New UI strings: add the key to `App/Resources/Localizable.xcstrings` (Xcode adds them when building in the IDE).
 
 ## Critical gotchas
 - Assertion names must be `uawake: <reason>` so they appear in `pmset -g assertions`.

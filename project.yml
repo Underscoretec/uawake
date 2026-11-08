@@ -1,0 +1,66 @@
+name: uawake
+options:
+  bundleIdPrefix: com.underscoretec
+  deploymentTarget:
+    macOS: "14.0"
+  developmentLanguage: en
+configFiles:
+  Debug: Config/Version.xcconfig
+  Release: Config/Version.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    GCC_TREAT_WARNINGS_AS_ERRORS: YES
+    # Ad-hoc signing for local builds; CI signs with Developer ID.
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+    DEAD_CODE_STRIPPING: YES
+packages:
+  UAwakeCore:
+    path: Packages/UAwakeCore
+  UAwakeSystem:
+    path: Packages/UAwakeSystem
+  UAwakeIPC:
+    path: Packages/UAwakeIPC
+targets:
+  uawake:
+    type: application
+    platform: macOS
+    sources: [App]
+    settings:
+      base:
+        PRODUCT_NAME: uawake
+        PRODUCT_BUNDLE_IDENTIFIER: com.underscoretec.uawake
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_CFBundleDisplayName: uawake
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Underscore Technology Pvt. Ltd. MIT licence."
+        CODE_SIGN_ENTITLEMENTS: App/uawake.entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+    dependencies:
+      - package: UAwakeCore
+      - package: UAwakeSystem
+      - package: UAwakeIPC
+  uawakeTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [AppTests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.underscoretec.uawakeTests
+    dependencies:
+      - target: uawake
+schemes:
+  uawake:
+    build:
+      targets:
+        uawake: all
+    test:
+      targets: [uawakeTests]

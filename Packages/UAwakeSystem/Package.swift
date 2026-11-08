@@ -6,5 +6,8 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [.library(name: "UAwakeSystem", targets: ["UAwakeSystem"])],
     dependencies: [.package(path: "../UAwakeCore")],
-    targets: [.target(name: "UAwakeSystem", dependencies: ["UAwakeCore"])]
+    targets: [
+        .target(name: "UAwakeSystem", dependencies: ["UAwakeCore"]),
+        .testTarget(name: "UAwakeSystemTests", dependencies: ["UAwakeSystem"]),
+    ]
 )

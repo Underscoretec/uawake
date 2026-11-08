@@ -46,7 +46,10 @@ public struct DeviceState: Equatable, Sendable {
     public var isLowPowerModeEnabled: Bool
     public var thermalState: ProcessInfo.ThermalState
 
-    public init(batteryLevel: Int?, powerSource: PowerSource, isLowPowerModeEnabled: Bool, thermalState: ProcessInfo.ThermalState) {
+    public init(
+        batteryLevel: Int?, powerSource: PowerSource, isLowPowerModeEnabled: Bool,
+        thermalState: ProcessInfo.ThermalState
+    ) {
         self.batteryLevel = batteryLevel
         self.powerSource = powerSource
         self.isLowPowerModeEnabled = isLowPowerModeEnabled
