@@ -57,7 +57,52 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.underscoretec.uawakeTests
     dependencies:
       - target: uawake
+  # Developer tool, never shipped: see docs/SANDBOX-SPIKE.md.
+  SandboxProbe:
+    type: application
+    platform: macOS
+    sources:
+      - path: Tools/SandboxProbe
+        excludes: ["Agent/**", "LaunchAgents/**", "*.mobileconfig", "*.entitlements", "Info.plist"]
+      - path: Tools/SandboxProbe/LaunchAgents
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchAgents
+    settings:
+      base:
+        PRODUCT_NAME: SandboxProbe
+        PRODUCT_BUNDLE_IDENTIFIER: com.underscoretec.uawake.SandboxProbe
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Tools/SandboxProbe/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Tools/SandboxProbe/SandboxProbe.entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_EMIT_LOC_STRINGS: NO
+    dependencies:
+      - package: UAwakeCore
+      - package: UAwakeSystem
+      - target: SandboxProbeAgent
+        embed: true
+        copy:
+          destination: executables
+  SandboxProbeAgent:
+    type: tool
+    platform: macOS
+    sources: [Tools/SandboxProbe/Agent]
+    settings:
+      base:
+        PRODUCT_NAME: SandboxProbeAgent
+        PRODUCT_BUNDLE_IDENTIFIER: com.underscoretec.uawake.SandboxProbe.agent
+        GENERATE_INFOPLIST_FILE: YES
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        CODE_SIGN_ENTITLEMENTS: Tools/SandboxProbe/Agent/Agent.entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+        SKIP_INSTALL: YES
 schemes:
+  SandboxProbe:
+    build:
+      targets:
+        SandboxProbe: all
   uawake:
     build:
       targets:

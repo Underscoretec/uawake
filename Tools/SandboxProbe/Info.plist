@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Sandbox Probe lists connected Bluetooth devices to test a uawake rule condition.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Sandbox Probe reads the Wi-Fi network name, which macOS gates behind Location.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Sandbox Probe reads the Wi-Fi network name, which macOS gates behind Location.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Sandbox Probe reads in-progress events to test a uawake rule condition.</string>
+</dict>
+</plist>

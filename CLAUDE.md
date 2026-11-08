@@ -33,6 +33,7 @@ one session engine. Full spec: `docs/SPEC.md`. Contracts: `docs/CONTRACTS.md`.
 | `CLI/` | `uawake` CLI (from 1.1) |
 | `Helper/` | Pro helper (from 2.0) |
 | `Config/Version.xcconfig` | Single source of version and build number |
+| `Tools/SandboxProbe/` | Sandbox spike app, not shipped; `make probe`. Results: `docs/SANDBOX-SPIKE.md` |
 | `docs/` | Spec, contracts, user/admin guides, appcast feeds |
 | `.github/` | CI, issue and PR templates |
 
