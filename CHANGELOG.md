@@ -8,7 +8,7 @@ All notable changes to uawake are recorded here. The format follows
 
 ## [0.1.0] - Unreleased
 
-First public alpha.
+First internal alpha.
 
 ### Added
 - Session engine: several sessions at once, each with its own IOKit power assertions named

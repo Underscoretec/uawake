@@ -85,7 +85,7 @@ A session is the unit everything works with. Each session has:
 ### Menu bar and popover
 
 - Menu bar icon with clear active and inactive states, in light and dark appearance.
-- Optional remaining-time text beside the icon, e.g. 1:42.
+- Optional remaining-time text beside the icon: `1:42` from an hour, `42m` under an hour, `m:ss` in the final minute. It is redrawn once a minute (each second only in the final minute).
 - Primary click toggles the default session; secondary click (or Option-click) opens the popover.
 - Popover contents: on/off control, remaining time, preset duration chips, "until" picker, extend buttons, list of active sessions with their reasons and a stop button each, links to Settings and Quit.
 - Global keyboard shortcut to toggle, set by the user (no Accessibility permission needed).
