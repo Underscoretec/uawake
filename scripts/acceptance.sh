@@ -3,6 +3,7 @@
 # Usage: acceptance.sh <path to uawake.app>. Run with no other uawake instance open:
 # URLs go to whichever instance LaunchServices picks.
 set -u
+trap '"${0:A:h}/clean-apps.sh" --tmp' EXIT  # copies under build.noindex/tmp are throwaway
 app=${1:?path to uawake.app}
 assertions() { pmset -g assertions | grep 'uawake:' | grep -v 'Countdown accuracy' | sed 's/^ *//' }
 stamp() { python3 -c 'import time; print(f"{time.time():.3f}")' }

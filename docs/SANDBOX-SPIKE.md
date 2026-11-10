@@ -44,7 +44,7 @@ uawake (`app-sandbox`, `network.client`). Probe-only extras: `device.bluetooth`,
 
 ## How to run the probe
 
-1. `make probe` builds the Release probe into `build/DerivedData/Build/Products/Release/SandboxProbe.app`.
+1. `make probe` builds the Release probe into `build.noindex/DerivedData/Build/Products/Release/SandboxProbe.app`.
 2. Headless, no prompts: `open -n <app> --args --run-all`. The app keeps running and logs changes.
    Read the results with
    `/usr/bin/log show --predicate 'subsystem == "com.underscoretec.uawake.probe"' --last 10m --style compact`

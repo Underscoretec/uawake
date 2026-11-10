@@ -1,6 +1,6 @@
 # Releasing uawake
 
-`make release` builds `build/release/uawake-<version>.dmg` and `.zip`. Without the items below it
+`make release` builds `build.noindex/release/uawake-<version>.dmg` and `.zip`. Without the items below it
 runs in **stub mode**: ad-hoc signed, no hardened runtime, not notarized. Stub builds are for local
 testing only.
 
@@ -24,7 +24,7 @@ testing only.
 ## Each release
 1. Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `Config/Version.xcconfig`; update CHANGELOG.
 2. `TEAM_ID=… NOTARY_PROFILE=… make release`.
-3. `./bin/sign_update build/release/uawake-<version>.zip` and add the item to the appcast
+3. `./bin/sign_update build.noindex/release/uawake-<version>.zip` and add the item to the appcast
    (`./bin/generate_appcast` can do both).
 4. Tag `v<version>` on `main`, publish the GitHub release with the DMG, update the Homebrew cask.
 

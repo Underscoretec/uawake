@@ -21,7 +21,6 @@ one session engine. Spec: `docs/SPEC.md`. Contracts: `docs/CONTRACTS.md`. Rules:
 - Distribution: GitHub + Homebrew, Developer ID signed, notarized, Sparkle. No Mac App Store.
 - Main app sandboxed; CLI and Pro helper outside it.
 - English at launch; every user-facing string in `Localizable.xcstrings` from the first line of UI.
-- Roadmap order: 0.1 Core → 1.0 Smart triggers → 1.1 Dev integrations → 1.2 Diagnostics → 1.3 Enterprise → 2.0 Pro helper.
 
 ## Repo layout
 | Path | Contents |
@@ -60,20 +59,22 @@ Dependency direction: App → IPC, System → Core. Core imports nothing but Fou
 - Never `git push`. No Co-Authored-By or generated-with attribution lines.
 
 ## Clean-build rule
-Never fetch, read, clone or reference KeepingYouAwake source or assets. Work only from
-`docs/SPEC.md` and Apple documentation.
+Never fetch, read, clone or reference KeepingYouAwake source or assets; work only from
+`docs/SPEC.md` and Apple docs.
 
 ## Build and test
 Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml` and not committed.
 - `make generate` / `make build` / `make test` (each package's `swift test` with warnings as
-  errors, then the app tests) / `make lint` / `make format` / `make clean`.
+  errors, then the app tests) / `make lint` / `make format` / `make clean` / `make clean-apps`.
 - One package: `cd Packages/<Name> && swift test`.
-- App: `build/DerivedData/Build/Products/Debug/uawake.app`. Check with `pmset -g assertions | grep uawake`.
-- Local builds are ad-hoc signed (`CODE_SIGN_IDENTITY "-"`); Debug omits the hardened runtime, Release has it.
+- Build output goes in `build.noindex/`; throwaway copies in `build.noindex/tmp`. Stray `uawake.app`
+  copies steal `uawake://`: `make clean-apps`.
+- App: `build.noindex/DerivedData/Build/Products/Debug/uawake.app`. Check: `pmset -g assertions | grep uawake`.
+- Local builds are ad-hoc signed; Debug omits the hardened runtime, Release has it.
 - `make uitest` runs the UI tests. They need UI automation allowed for Xcode's runner.
 - `make screenshots` regenerates `docs/design/screenshots/` (light and dark, over matching backdrops).
 - `make release`: DMG and zip (`docs/RELEASING.md`); unsigned stub without a Developer ID.
-  `scripts/acceptance.sh`, `scripts/perf-sample.sh` produce evidence. Never commit `docs/design/reference/`.
+  `scripts/acceptance.sh`, `scripts/perf-sample.sh` give evidence. Never commit `docs/design/reference/`.
 - `make strings` syncs `Localizable.xcstrings`; run it after any UI text change.
 
 ## Critical gotchas
@@ -112,7 +113,7 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
 - XCUITest's `launch()` terminates every running uawake (same bundle id). Never run UI tests
   during a long acceptance run. `-Headless` runs keep isolated settings and show no windows.
 - Popover colours come from `Palette` (WCAG AA, ContrastTests); no `.secondary`/`.orange` text.
-- Call `/usr/bin/log show` (zsh's builtin `log` shadows it).
+- Use `/usr/bin/log show` (zsh's `log` shadows it).
 
 ## Roadmap
 - 0.1 Core: session engine, presets, popover, guards, URL scheme, notifications.

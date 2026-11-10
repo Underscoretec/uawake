@@ -52,7 +52,7 @@ Signed downloads and a Homebrew cask arrive with the first public release. Until
 brew install xcodegen          # Xcode 26 or later is also required
 git clone https://github.com/Underscoretec/uawake.git && cd uawake
 make build                     # or: make release (an unsigned DMG for local testing)
-open build/DerivedData/Build/Products/Debug/uawake.app
+open build.noindex/DerivedData/Build/Products/Debug/uawake.app
 ```
 
 If the menu bar is full and the uawake icon is hidden, open uawake again from Applications or

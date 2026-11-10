@@ -5,6 +5,7 @@
 xcuserdata/
 DerivedData/
 build/
+build.noindex/
 *.xcresult
 # SwiftPM
 .build/
