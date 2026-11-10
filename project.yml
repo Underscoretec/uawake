@@ -46,6 +46,11 @@ targets:
         INFOPLIST_KEY_LSUIElement: YES
         INFOPLIST_KEY_CFBundleDisplayName: uawake
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_NSCameraUsageDescription: "uawake checks whether a camera is in use, to keep your Mac awake during calls. It never records or views video."
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: "uawake checks which Bluetooth devices are connected, for rules that keep your Mac awake."
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "macOS shares the Wi-Fi network name only with apps that have Location access. uawake uses the name for rules and never reads where you are."
+        INFOPLIST_KEY_NSLocationUsageDescription: "macOS shares the Wi-Fi network name only with apps that have Location access. uawake uses the name for rules and never reads where you are."
+        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "uawake checks whether a calendar event is in progress, for rules that keep your Mac awake. Events never leave your Mac."
         INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Underscore Technology Pvt. Ltd. MIT licence."
         CODE_SIGN_ENTITLEMENTS: App/uawake.entitlements
         ENABLE_HARDENED_RUNTIME: YES

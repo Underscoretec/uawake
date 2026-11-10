@@ -37,6 +37,26 @@ public struct UAwakeSettings {
         defaults.objectIsForced(forKey: key.rawValue)
     }
 
+    // MARK: Rules
+
+    /// "Pause all rules", kept across relaunches. `RulesPaused` without a
+    /// `RulesPausedUntil` date means until resumed.
+    public var rulesPause: RulePause? {
+        get {
+            guard bool(.rulesPaused, default: false) else { return nil }
+            return (defaults.object(forKey: SettingsKey.rulesPausedUntil.rawValue) as? Date).map { .until($0) }
+                ?? .indefinitely
+        }
+        nonmutating set {
+            set(newValue != nil, .rulesPaused)
+            if case .until(let date) = newValue {
+                set(date, .rulesPausedUntil)
+            } else {
+                defaults.removeObject(forKey: SettingsKey.rulesPausedUntil.rawValue)
+            }
+        }
+    }
+
     // MARK: Safety
 
     public var batteryGuardEnabled: Bool {
@@ -229,6 +249,8 @@ public enum SettingsKey: String, CaseIterable, Sendable {
     case globalShortcutKeyCode = "GlobalShortcutKeyCode"
     case globalShortcutModifiers = "GlobalShortcutModifiers"
     case firstRunCompleted = "FirstRunCompleted"
+    case rulesPaused = "RulesPaused"
+    case rulesPausedUntil = "RulesPausedUntil"
 }
 
 /// Menu bar icon family. The app maps each to an active and an inactive SF Symbol.

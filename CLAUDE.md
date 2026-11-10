@@ -2,7 +2,7 @@
 
 uawake — keep your Mac awake. Free, open-source (MIT) macOS menu bar app by
 Underscore Technology. Keeps a Mac awake on demand or automatically, built around
-one session engine. Full spec: `docs/SPEC.md`. Contracts: `docs/CONTRACTS.md`.
+one session engine. Spec: `docs/SPEC.md`. Contracts: `docs/CONTRACTS.md`. Rules: `docs/RULES-DESIGN.md`.
 
 ## Principles
 1. Every session has a reason — the app always shows what keeps the Mac awake and why.
@@ -27,8 +27,8 @@ one session engine. Full spec: `docs/SPEC.md`. Contracts: `docs/CONTRACTS.md`.
 | Path | Contents |
 | --- | --- |
 | `App/` | Menu bar app: popover, settings, first run |
-| `Packages/UAwakeCore/` | Session engine, assertions, guards, rules engine, persistence |
-| `Packages/UAwakeSystem/` | System monitors: power, battery, thermal, displays, devices, audio, network, CPU |
+| `Packages/UAwakeCore/` | Session engine, guards, `RuleEngine`, `RuleStore`, settings |
+| `Packages/UAwakeSystem/` | System monitors, `SignalHub`, permissions |
 | `Packages/UAwakeIPC/` | URL scheme parsing and routing; XPC protocol from 1.1 |
 | `CLI/` | `uawake` CLI (from 1.1) |
 | `Helper/` | Pro helper (from 2.0) |
@@ -51,8 +51,8 @@ Dependency direction: App → IPC, System → Core. Core imports nothing but Fou
 
 ## Testing
 - Swift Testing in each package's test target.
-- Inject `FakeClock`, `FakeAssertionProvider`, `FakeDeviceStateMonitor` through the protocols. No real sleeps or real time in unit tests.
-- Session engine coverage target: ≥ 85%.
+- Inject `FakeClock`, `FakeAssertionProvider`, fake monitors through the protocols. No real sleeps or time.
+- Session and rule engine coverage target: ≥ 85%.
 - Real IOKit assertions are checked only in integration runs with `pmset -g assertions`.
 
 ## Git
@@ -72,47 +72,46 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
 - Local builds are ad-hoc signed (`CODE_SIGN_IDENTITY "-"`); Debug omits the hardened runtime, Release has it.
 - `make uitest` runs the UI tests. They need UI automation allowed for Xcode's runner.
 - `make screenshots` regenerates `docs/design/screenshots/` (light and dark, over matching backdrops).
-- `make release` builds the DMG and zip (`docs/RELEASING.md`). Without a Developer ID it is an
-  unsigned stub. `scripts/acceptance.sh` and `scripts/perf-sample.sh` produce acceptance evidence.
-  `docs/design/reference/` is third-party reference material: gitignored, never commit it.
-- `make strings` syncs `Localizable.xcstrings` with every string the compiler extracted.
-  Run it after any UI text change.
+- `make release`: DMG and zip (`docs/RELEASING.md`); unsigned stub without a Developer ID.
+  `scripts/acceptance.sh`, `scripts/perf-sample.sh` produce evidence. Never commit `docs/design/reference/`.
+- `make strings` syncs `Localizable.xcstrings`; run it after any UI text change.
 
 ## Critical gotchas
-- Assertion names must be `uawake: <reason>` so they appear in `pmset -g assertions`.
-  Reasons are structured (`SessionReason`); names use `englishDescription`, never localized.
-  The UI renders reasons localized.
+- Assertion names are `uawake: <reason>` (`SessionReason.englishDescription`, never localized);
+  the UI renders reasons localized.
 - Toggle (primary click, `uawake://toggle`) counts and stops only manual and URL sessions.
-- Maximum cap: only indefinite and battery-level sessions; deadline `startedAt + cap`,
+- Maximum cap: only non-rule indefinite and battery-level sessions; deadline `startedAt + cap`,
   recomputed when `GuardPolicy` changes; ends with `.maximumCap`, never `.expired`.
 - Extend: only duration and until-time sessions; otherwise the engine throws `.notExtendable`.
 - Battery-level X ends only on battery power at or below X; never "charge up to".
-- Fast user switching (pause/resume) and sleep/wake are 0.1 requirements, via
-  `SessionLifecycleMonitor` → `SessionEngine.handle(_:)`.
+- Fast user switching and sleep/wake: `SessionLifecycleMonitor` → `SessionEngine.handle(_:)`.
 - The clock protocol is `SessionClock`, not `Clock` (which would shadow Swift's).
 - Deadlines are wall-clock `Date`s, so they hold across system sleep.
-- `SystemClock` holds a latency-critical `ProcessInfo` activity only for the final 60 s
-  before a deadline. Without it App Nap delays deadlines by up to ~10 s.
+- `SystemClock` holds a latency-critical activity for the final 60 s before a deadline (App Nap).
 - The app uses the AppKit lifecycle (`main.swift`, `AppDelegate`), not a SwiftUI `App`:
   `NSStatusItem` + `NSPopover` because `MenuBarExtra` can't tell primary from secondary clicks.
-  Windows host SwiftUI via `HostingWindowController`. Settings live in the sidebar main
-  window (`MainWindowView`, `MainSection`); add Rules/Diagnostics as sidebar sections.
-- Design: shared components in `DesignSystem.swift` (cards, pills, icon tiles, chips,
-  banners). Colour always paired with an icon and text: green awake, amber near a limit,
-  red stopped by a guard.
-- `-UITesting` launches with throwaway settings, no welcome window, and the popover
-  content in a stand-in panel (the real status item may not be placed on a crowded test
-  Mac). `-UITestDeviceState battery|lowPower` fixes the power state. Unit-test hosting shows nothing.
+  Windows host SwiftUI via `HostingWindowController`; sections are `MainSection` in `MainWindowView`.
+- Design: shared components in `DesignSystem.swift`. Colour always paired with an icon and
+  text: green awake, amber near a limit, red stopped by a guard.
+- `-UITesting`: throwaway settings, no welcome window, popover in a stand-in panel.
+  `-UITestDeviceState battery|lowPower` fixes power. `-UITestRules` loads fixture rules with
+  scripted signals and no monitors (keep it time-independent); `-UITestRulesSection`,
+  `-UITestRuleEditor edit|test`. Screenshots must click inside the window before shooting.
+- Rules: the app forwards each `DeviceState` to `RuleEngine` as `.power` *after*
+  `engine.apply`, plus every `SessionEvent` and lifecycle event. Monitors run only through
+  `SignalHub` for `neededSignals`. A guard end waits until 5 min guard-free; only a user stop
+  latches until conditions clear and return.
+- Permissions (Bluetooth, Location, Calendar) are requested only from explicit buttons. Never
+  touch IOBluetooth before Bluetooth is granted: it prompts.
 - Settings keys are public API for MDM (`docs/SETTINGS.md`): add keys, never rename them.
   The UI binds with `@AppStorage(SettingsKey.x.rawValue)`.
 - Guards apply at start too: `start` throws `.wouldEndImmediately(cause)` instead of
   creating a session that would end at once.
-- Ad-hoc builds with the hardened runtime can't load Sparkle.framework (library validation needs
-  a Team ID). Local Release runs use `ENABLE_HARDENED_RUNTIME=NO`; Developer ID builds keep it.
+- Ad-hoc hardened builds can't load Sparkle.framework (no Team ID): local Release runs use
+  `ENABLE_HARDENED_RUNTIME=NO`.
 - XCUITest's `launch()` terminates every running uawake (same bundle id). Never run UI tests
   during a long acceptance run. `-Headless` runs keep isolated settings and show no windows.
-- Popover colours come from `Palette` (WCAG AA checked in ContrastTests). Don't use `.secondary`,
-  `.orange` or other system colours for text on the popover backing.
+- Popover colours come from `Palette` (WCAG AA, ContrastTests); no `.secondary`/`.orange` text.
 - Call `/usr/bin/log show` (zsh's builtin `log` shadows it).
 
 ## Roadmap

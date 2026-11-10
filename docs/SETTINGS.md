@@ -26,11 +26,15 @@ immediately.
 | `GlobalShortcutKeyCode` | Integer | none | macOS virtual key code | Global shortcut key; no shortcut unless both shortcut keys are set |
 | `GlobalShortcutModifiers` | Integer | none | Carbon modifier mask, at least one of ⌘ ⌥ ⌃ (`cmdKey` 256, `shiftKey` 512, `optionKey` 2048, `controlKey` 4096) | Global shortcut modifiers |
 | `FirstRunCompleted` | Boolean | `false` | | Set when the welcome window is dismissed; force `true` to skip first run |
+| `RulesPaused` | Boolean | `false` | | "Pause all rules" is on (1.0). Manual and URL sessions are unaffected |
+| `RulesPausedUntil` | Date | none | | When the pause ends; absent means until turned back on (1.0) |
 
 **Preset values** are `indefinite` or a duration of `h`, `m`, `s` parts in that order, each
 at most once: `45s`, `90m`, `1h30m`. Unreadable entries are skipped.
 
 **Not stored here:**
+- Rules live in `rules.json` in the app's Application Support folder, not in user defaults
+  (`docs/RULES-DESIGN.md`). MDM-provided rules arrive in 1.3.
 - Launch at login is held by the system (`SMAppService`). Admins manage it with the
   `com.apple.servicemanagement` login-items payload.
 

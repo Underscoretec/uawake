@@ -225,8 +225,9 @@ public final class DefaultSessionEngine: SessionEngine {
         return session.startedAt + cap.timeInterval
     }
 
+    /// Indefinite and battery-level sessions, except a rule's: its conditions end it.
     private static func isCapped(_ session: Session) -> Bool {
-        !isWarnable(session)
+        !isWarnable(session) && session.source != .rule
     }
 
     /// `duration` and `until` sessions: they can be extended and are warned before they end.

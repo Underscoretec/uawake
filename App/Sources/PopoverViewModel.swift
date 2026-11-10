@@ -2,9 +2,9 @@ import Foundation
 import Observation
 import UAwakeCore
 
-/// Sections of the main window's sidebar. Rules (1.0) and Diagnostics (1.2) join later.
+/// Sections of the main window's sidebar. Diagnostics (1.2) joins later.
 enum MainSection: String, CaseIterable, Hashable, Identifiable {
-    case overview, durations, safety, appearance, general, updates, about
+    case overview, rules, durations, safety, appearance, general, updates, about
     var id: Self { self }
 }
 
@@ -113,6 +113,8 @@ final class PopoverViewModel {
     private(set) var refusal: Refusal?
     var untilTime: Date
 
+    /// Set by ``AppModel``; `nil` in tests that don't involve rules.
+    @ObservationIgnored var rules: RulesModel?
     @ObservationIgnored var openMainWindow: (MainSection?) -> Void = { _ in }
     @ObservationIgnored var showPopover: () -> Void = {}
 
@@ -144,17 +146,56 @@ final class PopoverViewModel {
         engine.sessions.map(SessionRow.init)
     }
 
-    /// The only session, when there is exactly one: the hero shows it and the list hides.
+    /// The only session, when there is exactly one and the list is hidden: the hero shows it.
     var singleRow: SessionRow? {
         let rows = rows
-        return rows.count == 1 ? rows[0] : nil
+        return rows.count == 1 && !showsSessionList ? rows[0] : nil
     }
 
-    /// The list shows with 2+ sessions, or a single paused one (the hero is idle then).
+    /// The list shows with 2+ sessions, a single paused one (the hero is idle then), or any
+    /// rule session: a rule's row carries its source tile, what matched and its stop button.
     var showsSessionList: Bool {
         let count = engine.sessions.count
-        return count >= 2 || (count == 1 && !isAwake)
+        return count >= 2 || (count == 1 && !isAwake) || engine.sessions.contains { $0.source == .rule }
     }
+
+    // MARK: Rules
+
+    /// What the popover's Rules strip says; `nil` (strip hidden) when there are no rules.
+    struct RulesStrip: Equatable {
+        let text: String
+        let isPaused: Bool
+    }
+
+    func rulesStrip(now: Date) -> RulesStrip? {
+        guard let rules, !rules.rules.isEmpty else { return nil }
+        if let pause = rules.engine.pause {
+            return RulesStrip(text: pause.text(now: now), isPaused: true)
+        }
+        return RulesStrip(
+            text: String(
+                localized: "\(rules.matchingCount) of \(rules.rules.count) rules matching",
+                comment: "Popover rules strip: matching rules out of all rules"),
+            isPaused: false)
+    }
+
+    /// For a rule's session row: "Rule · Keynote is in front", or "Rule · ends in 1:12" while
+    /// it lingers. `nil` for other sessions.
+    func ruleSubtitle(_ row: SessionRow, now: Date) -> String? {
+        guard row.source == .rule else { return nil }
+        let label = String(localized: "Rule", comment: "Session source")
+        guard let rules, let rule = rules.engine.rule(forSession: row.id) else { return label }
+        if case .lingering(let until) = rules.status(of: rule) {
+            let left = Self.countdownText(until.timeIntervalSince(now))
+            return String(localized: "\(label) · ends in \(left)", comment: "Rule session row while lingering")
+        }
+        let met = zip(rule.conditions, rules.engine.readings(for: rule)).filter { $0.1.state == .met }.map(\.0.summary)
+        return met.isEmpty ? label : "\(label) · \(met.formatted(.list(type: .and, width: .narrow)))"
+    }
+
+    func pauseRules(_ choice: PauseChoice) { rules?.pause(choice) }
+
+    func resumeRules() { rules?.resume() }
 
     /// The running manual session's end condition, for the selected preset chip.
     var currentManualCondition: EndCondition? {

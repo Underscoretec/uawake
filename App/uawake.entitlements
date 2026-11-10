@@ -6,6 +6,19 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- Rules (1.0). Camera: only to see whether a camera is in use ("Call in progress");
+	     no video is ever read. Bluetooth, Location (Wi-Fi network name) and Calendar are
+	     requested only when a rule needs them. User-selected files: the app picker's "Other…". -->
+	<key>com.apple.security.device.camera</key>
+	<true/>
+	<key>com.apple.security.device.bluetooth</key>
+	<true/>
+	<key>com.apple.security.personal-information.location</key>
+	<true/>
+	<key>com.apple.security.personal-information.calendars</key>
+	<true/>
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
 	<!-- Sparkle's installer XPC services, required for a sandboxed app to update itself. -->
 	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
 	<array>

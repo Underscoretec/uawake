@@ -56,7 +56,7 @@ The menu bar, URL scheme, CLI, Shortcuts and rules engine all create sessions wi
 
 ## Release 0.1 — Core
 
-0.1 delivers a dependable keep-awake app with a session engine designed for everything that follows. It is the first public alpha.
+0.1 delivers a dependable keep-awake app with a session engine designed for everything that follows. It is the first internal alpha.
 
 ### Session engine
 
@@ -99,7 +99,7 @@ All guards are on by default and adjustable in Settings.
 | Battery | End sessions at 20% when on battery | Threshold 5–95%; ignored on AC power |
 | Low Power Mode | End sessions when Low Power Mode turns on | On/off |
 | Thermal | End sessions when the system reports serious or critical thermal state | On/off |
-| Maximum cap | Indefinite sessions end after 24 h | 1–72 h, or off; also applies to battery-level sessions; counted from the session start, including paused time |
+| Maximum cap | Indefinite sessions end after 24 h | 1–72 h, or off; also applies to battery-level sessions; counted from the session start, including paused time; rule sessions are exempt (their conditions end them) |
 
 When a guard ends a session, the user gets a notification naming the guard.
 
@@ -158,8 +158,10 @@ A short welcome sheet: what uawake does, enable notifications, enable launch at 
 - While the rule's conditions are met, it holds one session with source "rule" and the rule's name as the reason.
 - When the conditions stop being met, the session ends after the linger time (default 2 min), so brief dips don't cause sleep.
 - Rules can also carry an active-hours window, e.g. a rule that only applies on weekdays 9:00–19:00.
-- Safety guards always win over rules. A rule that a guard has ended stays off until its conditions clear and return.
-- "Pause all rules" for 1 h, until tomorrow, or until turned back on. Manual sessions are unaffected.
+- Safety guards always win over rules. A guard ends a rule's session while it applies; the rule restarts by itself once no guard has applied for 5 continuous minutes, and shows that it is waiting meanwhile.
+- A rule whose session the user stops stays off until its conditions clear and return.
+- Rule sessions are exempt from the maximum cap.
+- "Pause all rules" for 1 h, until tomorrow at 6:00, or until turned back on. Manual sessions are unaffected.
 
 ### Conditions
 
@@ -201,7 +203,7 @@ With 10 rules enabled, uawake's average CPU use stays below 0.5% and memory belo
 - [ ] Each condition type starts a session within its detection window and ends it after the linger time.
 - [ ] All-match and any-match rules behave correctly with three or more conditions.
 - [ ] Active-hours windows start and stop rules at the right local time, including across midnight.
-- [ ] A guard ending a rule session is not undone until the rule's conditions clear and return.
+- [ ] A guard ending a rule session holds the rule off while the guard applies, and the rule restarts 5 minutes after the guard clears.
 - [ ] Pause all rules works for each duration and leaves manual sessions running.
 - [ ] Rules needing a permission ask only when added and show a warning if it's denied.
 - [ ] The performance budget holds over an 8-hour soak test.

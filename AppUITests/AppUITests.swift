@@ -95,6 +95,55 @@ final class AppUITests: XCTestCase {
     }
 }
 
+extension AppUITests {
+    /// The Rules section with the screenshot fixture: five rules with scripted signals.
+    @MainActor
+    func testRulesListShowsLiveStatusAndPauses() throws {
+        app.launchArguments = [
+            "-UITesting", "-UITestMainWindow", "-UITestRules", "-UITestRulesSection", "-UITestDeviceState", "battery",
+        ]
+        app.launch()
+        let window = app.windows["Main"]
+        XCTAssertTrue(window.waitForExistence(timeout: 5))
+        XCTAssertTrue(window.text("Presenting").waitForExistence(timeout: 3))
+        XCTAssertTrue(window.text("Matching now").exists)
+        XCTAssertTrue(window.text("Needs Location").exists)
+
+        window.descendants(matching: .any)["PauseRulesMenu"].firstMatch.click()
+        app.menuItems["For 1 hour"].click()
+        XCTAssertTrue(window.text("Rules paused until").waitForExistence(timeout: 2))
+        window.descendants(matching: .any)["ResumeRules"].firstMatch.click()
+        XCTAssertTrue(window.text("Matching now").waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func testRuleEditorOpensAndCancels() throws {
+        app.launchArguments = [
+            "-UITesting", "-UITestMainWindow", "-UITestRules", "-UITestRulesSection", "-UITestDeviceState", "battery",
+        ]
+        app.launch()
+        let window = app.windows["Main"]
+        XCTAssertTrue(window.text("Presenting").waitForExistence(timeout: 5))
+        window.descendants(matching: .any)["Rule-Presenting"].firstMatch.click()
+        let editor = app.descendants(matching: .any)["RuleEditor"].firstMatch
+        XCTAssertTrue(editor.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.text("Keynote is in front").exists)
+        app.descendants(matching: .any)["RuleEditorCancel"].firstMatch.click()
+        XCTAssertFalse(editor.waitForExistence(timeout: 1))
+    }
+
+    /// The popover's Rules strip and a rule session row with its own source.
+    @MainActor
+    func testPopoverShowsRuleSessionsAndTheRulesStrip() throws {
+        app.launchArguments = ["-UITesting", "-UITestRules", "-UITestDeviceState", "battery"]
+        app.launch()
+        let popover = app.windows["Popover"]
+        XCTAssertTrue(popover.text("2 of 5 rules matching").waitForExistence(timeout: 5))
+        XCTAssertTrue(popover.text("Rule · Keynote is in front").exists)
+        XCTAssertTrue(popover.labeled("Stop rule Presenting").exists)
+    }
+}
+
 extension XCUIElement {
     /// Any descendant whose label or value contains `text` (SwiftUI text exposes its
     /// string as the value; combined elements join several strings).

@@ -67,6 +67,28 @@ final class ScreenshotTests: XCTestCase {
             sleep(1)
             shoot(window, "main-\(section.lowercased())-\(mode)")
         }
+        app.terminate()
+
+        // Rules (fixture rules with scripted signals): the list, the editor, the Test view,
+        // and the popover with rule sessions and the Rules strip.
+        let rules = base + ["-UITestRules"]
+        launch(rules + ["-UITestMainWindow", "-UITestRulesSection"])
+        XCTAssertTrue(window.text("Matching now").waitForExistence(timeout: 10))
+        window.text("Rules").click()  // Brings the app and its window in front of the backdrop.
+        shoot(window, "main-rules-\(mode)")
+        app.terminate()
+        for (tab, name) in [("edit", "rule-editor"), ("test", "rule-test")] {
+            launch(rules + ["-UITestMainWindow", "-UITestRulesSection", "-UITestRuleEditor", tab])
+            let editor = app.descendants(matching: .any)["RuleEditor"].firstMatch
+            XCTAssertTrue(editor.waitForExistence(timeout: 10))
+            // Activates the app with a click on the sheet's empty bottom-left corner.
+            editor.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.98)).click()
+            shoot(window, "\(name)-\(mode)")
+            app.terminate()
+        }
+        launch(rules)
+        XCTAssertTrue(popover.text("rules matching").waitForExistence(timeout: 10))
+        shoot(popover, "popover-rules-\(mode)")
     }
 
     @MainActor

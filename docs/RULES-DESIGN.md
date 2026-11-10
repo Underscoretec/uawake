@@ -1,11 +1,12 @@
 # uawake 1.0 — rules engine design
 
-Status: **Gate A, awaiting approval.** No feature code exists yet. Sources: `docs/SPEC.md`
+Status: **approved at Gate A (10 Nov 2026), with the maintainer's decisions in §12; built in
+Gate B.** Sources: `docs/SPEC.md`
 (Release 1.0), `docs/CONTRACTS.md`, `docs/SANDBOX-SPIKE.md`, `docs/ACCEPTANCE-0.1.md` and the 0.1 code.
 
-Anything marked **unverified** has not been observed on a real Mac yet and is checked at
-Gate B or in the Gate C live session. Open questions for the maintainer are in
-[Decisions needed](#12-decisions-needed).
+Anything marked **unverified** has not been observed on a real Mac yet and is checked in the
+Gate C live session. The maintainer's answers to the Gate A questions are in
+[Decisions](#12-decisions).
 
 ## 1. Summary
 
@@ -115,7 +116,8 @@ Notes per condition:
 - **Power adapter:** always met on desktop Macs.
 - **Display:** AirPlay and Sidecar displays count as external.
 - **Bluetooth:** IOBluetooth lists classic paired devices. Whether LE-only devices appear is unverified.
-- **Calendar:** all-day events and events the user declined are ignored. The keyword matches
+- **Calendar:** all-day events, events the user declined and events whose availability is
+  "free" are ignored. The keyword matches
   the title, ignoring case and accents. Titles stay in memory, are never written to disk and
   are logged only as private.
 - **Wi-Fi fallback:** if CoreWLAN events don't arrive in the sandbox, the SSID is re-read on
@@ -139,28 +141,37 @@ its full linger time. One episode holds at most one session.
 | Idle | Not matching | Matches → starts a session → Active |
 | Active | Holds one session: `.rule`, `.rule(name:)`, the rule's modes, `.indefinite` | Stops matching → Lingering |
 | Lingering | Not matching; the session is still held | Matches again → Active. Linger elapses → session ends (`expired`) → Idle |
-| Held | The session was ended from outside during this episode | Not matching for the linger time → Idle |
+| Waiting | A guard ended (or refused) the session | No guard has applied for 5 continuous minutes → evaluated (starts if matching). Not matching for the linger time → Idle |
+| Stopped by user | The user stopped the session during this episode | Not matching for the linger time → Idle |
 | Needs permission | A condition is unavailable | Permission granted → evaluated at once |
 | Outside hours | Active-hours window is closed | Window opens → evaluated at once |
 
 Rules in detail:
 - **One session per matching rule.** Three matching rules are three sessions with three sets of
   assertions; the engine's combined-modes behaviour is unchanged.
-- **Guards always win.** The rule engine reads `SessionEngine.events()`. If a session it holds
-  ends with `batteryGuard`, `lowPowerMode`, `thermalGuard` or `maximumCap`, the rule becomes
-  Held and does not restart until the episode is over, that is, until its conditions clear and
-  return. A start refused with `wouldEndImmediately` is handled the same way.
-- **Stop button.** Stopping a rule session from the popover (`stoppedByUser`) also puts the
-  rule in Held. Otherwise it would restart at once.
-- **The maximum cap applies.** Rule sessions are indefinite, so the existing cap ends them
-  (24 h by default) and the rule is then Held.
+- **Guards always win, then cool down.** The rule engine reads `SessionEngine.events()`. If a
+  session it holds ends with `batteryGuard`, `lowPowerMode` or `thermalGuard`, the rule becomes
+  Waiting. It restarts by itself (if its conditions still match) once **no guard has applied for
+  5 continuous minutes**; a guard returning during the cool-down starts the 5 minutes again. A
+  start refused with `wouldEndImmediately` is handled the same way. The rule shows why it waits
+  ("Waiting: Mac cooling down", "Waiting: battery low", "Waiting: Low Power Mode is on") and,
+  once the guard has cleared, "Waiting: restarts in 4:12". The rule engine checks "does a guard
+  apply" with the same `Guard` values and policy as the session engine, on the device state the
+  app forwards after `SessionEngine.apply`.
+- **Stop button.** Stopping a rule session from the popover (`stoppedByUser`) latches the rule
+  for the rest of the episode: it stays off until its conditions clear (for the linger time) and
+  return. This is the only latch.
+- **Rule sessions are exempt from the maximum cap.** Their own conditions end them. The cap
+  still applies to every other indefinite and battery-level session (`DefaultSessionEngine.isCapped`).
 - **Linger** applies only when conditions stop being met. Disabling or deleting a rule, pausing
   all rules and an active-hours window closing end the session immediately.
-- **Editing** a rule that holds a session ends that session and re-evaluates straight away, so
-  a rename or mode change shows up in the assertion name. Start is synchronous, so there is no
-  gap long enough for idle sleep.
-- **Re-arming.** Turning a rule off and on, editing it, or resuming from pause clears Held. If a
-  guard still applies, the start is refused and the rule is Held again.
+- **Editing** a rule that holds a session replaces the session, **starting the new one before
+  ending the old**, so there is never a moment without an assertion; a rename or mode change
+  shows up in the assertion name at once (test
+  `editingAnActiveRuleStartsTheNewSessionBeforeEndingTheOld`). If the edited rule no longer
+  matches, the old session simply ends.
+- **Re-arming.** Turning a rule off and on, editing it, or resuming from pause clears a user
+  latch or a guard wait. If a guard still applies, the start is refused and the rule waits again.
 - **End causes** reuse the existing enum: `expired` when conditions end, `stoppedByUser` when
   the user disables, deletes, edits or pauses.
 - **Fast user switching:** the session engine pauses rule sessions like any other. The rule
@@ -176,7 +187,8 @@ Rules in detail:
 
 ## 5. Pause all rules
 
-- Choices: **1 hour**, **until tomorrow** (the next local midnight), **until resumed**.
+- Choices: **For 1 hour**, **Until tomorrow, 6:00** (06:00 local time on the next calendar day,
+  even when paused after midnight), **Until I turn them back on**.
 - Pausing ends every rule session immediately and stops the rule monitors. Manual, URL and
   other sessions are untouched.
 - Stored in settings so it survives a relaunch: `RulesPaused` (Boolean) and `RulesPausedUntil`
@@ -355,31 +367,29 @@ own end condition was reached".
 6. **Missing permission** → the whole rule is inactive, even in "any" mode with other usable
    conditions, as the spec says "the rule … stays inactive".
 7. **"Above X for 1 min"** (CPU, network) → the average over the window.
-8. **Calendar "in progress"** → excludes all-day and declined events.
+8. **Calendar "in progress"** → excludes all-day, declined and "free" events.
 9. **Weekly windows past midnight** → belong to the day they start on.
 10. **Templates** → offered, not pre-installed. "Building" follows the spec literally: Xcode
     merely being open keeps the Mac awake.
-11. **Rule edits while active** → restart the session.
+11. **Rule edits while active** → replace the session, new one first.
 12. **Network rate** → `en*` interfaces only; 1 MB/s is 1,000,000 bytes per second.
 13. **Latches and linger are not persisted** across a relaunch.
 14. **Per-app CPU** → not built. The spec's wording limits it rather than requires it.
 
-## 12. Decisions needed
+## 12. Decisions
 
-1. **Guard latch after the guard clears.** By the spec, a rule ended by the battery guard
-   stays off after power is plugged back in, until its conditions clear and return.
-   Recommended: follow the spec; the row says "Stopped by Battery guard" and toggling the rule re-arms it.
-   Alternative: also re-arm when the guard that ended it stops applying (the cap would still latch).
-2. **Maximum cap on rule sessions.** Recommended: it applies. Consequence: "Power adapter
-   connected" on a desktop Mac ends after 24 h and stays off, since its conditions never clear,
-   unless the cap is raised or turned off in Safety. Alternative: exempt rule sessions from the cap.
-3. **"Until tomorrow".** Recommended: next local midnight. Alternative: a morning hour such as 06:00.
-4. **App picker "Other…".** Choosing an app that isn't running needs an open panel, which needs
-   the `files.user-selected.read-only` entitlement now (the spec plans user-selected files for
-   1.3). Recommended: add it. Alternative: running apps only in 1.0.
-5. **Rules in the URL scheme.** The spec puts rule pause/resume in the 1.1 CLI and App Intents
-   and adds no 1.0 URLs. Recommended: leave it for 1.1. Alternative: add
-   `uawake://rules/pause` and `/resume` now.
-6. **Per-app CPU.** Recommended: leave out of 1.0 (whole-system only).
-7. **SPEC wording.** `docs/SPEC.md` still calls 0.1 "the first public alpha". The CHANGELOG now
-   says internal. Change the spec line too?
+Answered by the maintainer at Gate A (10 Nov 2026):
+
+1. **Guard latch** → no latch for guards. A guard ends a rule's session while it applies; the
+   rule re-arms automatically once no guard has applied for 5 continuous minutes, and shows the
+   waiting state. Only the user stopping a rule session latches it for the rest of the episode.
+2. **Maximum cap** → rule sessions are exempt. The cap applies only to manual, URL and other
+   non-rule indefinite and battery-level sessions.
+3. **"Until tomorrow"** → 06:00 local next morning, labelled "Until tomorrow, 6:00".
+4. **App picker "Other…"** → add `com.apple.security.files.user-selected.read-only` now.
+5. **Rule URLs** → stay in 1.1.
+6. **Per-app CPU** → whole-system CPU only in 1.0.
+7. **SPEC wording** → 0.1 is "the first internal alpha"; the decisions above are in `docs/SPEC.md`.
+
+Also approved: all 14 resolutions in §11, plus editing an active rule starts the new session
+before ending the old (with a test), and calendar conditions ignore "free" events.

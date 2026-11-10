@@ -145,6 +145,7 @@ extension MainSection {
     var title: String {
         switch self {
         case .overview: String(localized: "Overview", comment: "Main window section")
+        case .rules: String(localized: "Rules", comment: "Main window section")
         case .durations: String(localized: "Durations", comment: "Main window section")
         case .safety: String(localized: "Safety", comment: "Main window section")
         case .appearance: String(localized: "Appearance", comment: "Main window section")
@@ -158,6 +159,8 @@ extension MainSection {
         switch self {
         case .overview:
             String(localized: "What keeps your Mac awake right now.", comment: "Main window section subtitle")
+        case .rules:
+            String(localized: "Keep your Mac awake automatically.", comment: "Main window section subtitle")
         case .durations:
             String(localized: "The presets in the menu bar popover.", comment: "Main window section subtitle")
         case .safety:
@@ -177,6 +180,7 @@ extension MainSection {
     var symbol: String {
         switch self {
         case .overview: "gauge.with.dots.needle.67percent"
+        case .rules: "wand.and.stars"
         case .durations: "timer"
         case .safety: "shield.lefthalf.filled"
         case .appearance: "paintbrush"

@@ -122,11 +122,35 @@ defaults change. It also holds the duration presets (add, replace, remove, move,
 `FakeClock`, `FakeAssertionProvider` and `DeviceState.test(...)`, shared by every
 package's tests. Never linked into the app.
 
+## Rules (1.0)
+No existing signature changed. Rule sessions are exempt from the maximum cap
+(`DefaultSessionEngine.isCapped` leaves out `.rule`).
+
+- **Rule, Condition, WeeklyWindow** (`UAwakeCore/Rule.swift`): the rule model. Codable as
+  plist-compatible JSON; decoding clamps values and rejects rules without a name or
+  conditions, or with an unknown condition type. `WeeklyWindow.contains` and
+  `nextBoundary` are pure functions of a date and a `Calendar`.
+- **RuleStore** (`UAwakeCore/RuleStore.swift`): `{ "version": 1, "rules": [...] }`. Missing file:
+  no rules. Unreadable entries are kept as `JSONValue` and written back. A newer version is
+  left untouched (`Problem.newerVersion`); a corrupt file is moved aside (`Problem.corrupt`).
+- **Signal** (`UAwakeCore/Signals.swift`): the value each monitor reports, with `SignalKind`.
+  Core stays Foundation-only.
+- **RuleEngine** (`UAwakeCore/RuleEngine.swift`): `@MainActor @Observable`. Inputs:
+  `update(_ Signal)`, `handle(SessionEvent)`, `handle(SessionLifecycleEvent)`, `setRules`,
+  `setPause`, `permissions`, `preview`, `reset(_ SignalKind)`, `reevaluate()`. Outputs:
+  `statuses` (`RuleStatus` per rule), `neededSignals`, `readings(for:)`, `rule(forSession:)`.
+  It only calls `SessionEngine.start`/`stop`; the app forwards each `DeviceState` as
+  `.power` *after* `SessionEngine.apply`. Guard waits re-arm after 5 min with no guard.
+  One timer task on the `SessionClock` covers settle, linger, boundaries and pause end.
+- **SignalMonitor, PermissionProvider** (`UAwakeSystem/SignalMonitor.swift`): one generic
+  monitor protocol (`updates()` yields current value then changes) with a conformer per
+  system source, and permission status/request. **SignalHub** runs a monitor only while
+  `neededSignals` contains its kind.
+
+**Threading:** model and signal values `Sendable`; `RuleEngine` and `SignalHub` `@MainActor`;
+monitors `Sendable`.
+
 ## How later releases plug in
-- **1.0 rules:** a `RuleEngine` in Core consumes new monitors (also `AsyncStream`
-  protocols in UAwakeSystem) and calls `start`/`stop` with source `.rule` and
-  reason `.rule(name:)`. "Guard ended it, stay off" is rule-engine state, read from
-  `events()`. No contract change.
 - **1.1 CLI:** an XPC protocol in UAwakeIPC mirrors `SessionEngine` (start, stopAll,
   status). The app's XPC listener hops to the main actor and calls the engine with
   source `.cli`. App Intents do the same with `.shortcut`.

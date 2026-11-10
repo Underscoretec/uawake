@@ -18,7 +18,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let options = LaunchOptions(ProcessInfo.processInfo.arguments)
         if let appearance = options.appearance { NSApplication.shared.appearance = NSAppearance(named: appearance) }
 
-        let model = AppModel(settingsSuite: options.settingsSuite, fixedDeviceState: options.deviceState)
+        let model = AppModel(
+            settingsSuite: options.settingsSuite, fixedDeviceState: options.deviceState, rulesFile: options.rulesFile,
+            rulesFixture: options.rulesFixture)
+        model.rules.uiTestEditor = options.ruleEditor
         self.model = model
         if options.showsCountdown { model.settings.showsCountdown = true }
         let mainWindow = MainWindowController(model: model)
@@ -41,7 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             model.popover.showPopover = {}  // The stand-in is already on screen.
             if let backdrop = options.backdrop { showBackdrop(dark: backdrop == "dark") }
             if options.showsMainWindow {
-                mainWindow.show(section: .overview)
+                mainWindow.show(section: options.rulesFixture && options.showsRulesSection ? .rules : .overview)
             } else if options.showsRealPopover {
                 showRealPopover(statusItem)
             } else {
@@ -181,6 +184,13 @@ struct LaunchOptions {
     var headless = false
     var sampleInterval: Int?
     var backdrop: String?
+    /// A rules file name inside the rules folder, for acceptance and soak runs (`-RulesFile soak.json`).
+    var rulesFile: String?
+    /// Screenshot rules with scripted signals (`-UITestRules`); `-UITestRulesSection` opens the Rules section,
+    /// `-UITestRuleEditor edit|test` also opens the editor on the first rule.
+    var rulesFixture = false
+    var showsRulesSection = false
+    var ruleEditor: RulesModel.UITestEditor?
 
     var settingsSuite: String? {
         if uiTesting { return "com.underscoretec.uawake.uitests" }
@@ -219,6 +229,10 @@ struct LaunchOptions {
         headless = arguments.contains("-Headless")
         sampleInterval = value(after: "-SampleCountdown").flatMap(Int.init)
         backdrop = value(after: "-UITestBackdrop")
+        rulesFile = value(after: "-RulesFile")
+        rulesFixture = arguments.contains("-UITestRules")
+        showsRulesSection = arguments.contains("-UITestRulesSection")
+        ruleEditor = value(after: "-UITestRuleEditor").flatMap(RulesModel.UITestEditor.init(rawValue:))
     }
 }
 

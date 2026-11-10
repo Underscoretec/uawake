@@ -1,20 +1,48 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ %@–%@": {
+      "comment": "Schedule: days, start–end"
+    },
+    "%@ connected": {
+      "comment": "Condition summary: a named display"
+    },
     "%@ ended. %@": {
       "comment": "Banner body: session, then why the guard ended it"
     },
     "%@ ends in %@.": {
       "comment": "Notification body: reason, time left"
     },
+    "%@ is in front": {
+      "comment": "Condition summary"
+    },
+    "%@ is open": {
+      "comment": "Condition summary"
+    },
     "%@ left": {
       "comment": "Popover: time remaining"
+    },
+    "%@ · ends in %@": {
+      "comment": "Rule session row while lingering"
+    },
+    "%@, all day": {
+      "comment": "Schedule: days, whole day"
+    },
+    "%@. An end time before the start runs past midnight.": {},
+    "%@/s": {
+      "comment": "Network rate, e.g. 1 MB/s"
     },
     "%@: %@": {
       "comment": "Session reason: source, then when it ends, e.g. Manual: 2 hours"
     },
     "%lld active": {
       "comment": "Session count"
+    },
+    "%lld of %lld rules matching": {
+      "comment": "Popover rules strip: matching rules out of all rules"
+    },
+    "%lld rules from a newer version are kept but not shown.": {
+      "comment": "Rules notice: rules this version can't read"
     },
     "+1 hr": {},
     "+15 min": {},
@@ -24,12 +52,43 @@
     "About": {
       "comment": "Main window section"
     },
+    "Above": {},
     "Add": {},
+    "Add Condition": {},
     "Add a duration": {},
+    "Add at least one condition.": {
+      "comment": "Rule editor: why Save is off"
+    },
+    "All of these are true": {},
+    "All of: %@": {
+      "comment": "Rule summary"
+    },
+    "All-day, declined and free events are ignored.": {},
+    "Allow %@ access": {},
+    "Also true while dictation or a recording uses the microphone.": {},
+    "Another app is in front": {
+      "comment": "Test view"
+    },
+    "Any calendar": {},
+    "Any display": {},
+    "Any of these are true": {},
+    "Any of: %@": {
+      "comment": "Rule summary"
+    },
+    "App": {},
+    "App is in front": {
+      "comment": "Condition type"
+    },
+    "App is open": {
+      "comment": "Condition type"
+    },
     "Appearance": {
       "comment": "Main window section"
     },
     "Applies to indefinite and battery-level sessions, counted from when they start.": {},
+    "Audio is playing": {
+      "comment": "Condition summary"
+    },
     "Awake": {},
     "Battery %@": {
       "comment": "Status chip, VoiceOver"
@@ -42,11 +101,31 @@
       "comment": "Status chip"
     },
     "Beta": {},
+    "Blank Rule": {},
+    "Bluetooth": {},
     "Bolt": {
       "comment": "Menu bar icon style"
     },
+    "Both": {},
+    "Building": {
+      "comment": "Rule template name"
+    },
     "CLI": {
       "comment": "Session source"
+    },
+    "Calendar": {},
+    "Calendar event in progress": {
+      "comment": "Condition summary"
+    },
+    "Call in progress": {
+      "comment": "Condition type"
+    },
+    "Camera": {},
+    "Camera in use": {
+      "comment": "Condition summary"
+    },
+    "Camera or microphone in use": {
+      "comment": "Condition summary"
     },
     "Can't keep your Mac awake": {
       "comment": "Banner title: start refused"
@@ -58,6 +137,8 @@
     },
     "Check for Updates…": {},
     "Check for updates automatically": {},
+    "Choose a Device": {},
+    "Choose an App": {},
     "Clear": {},
     "Clear shortcut": {},
     "Click the icon to turn uawake on or off. Option-click or right-click it for durations and settings.": {},
@@ -65,29 +146,94 @@
     "Click to turn uawake on or off. Option-click or right-click for options.": {
       "comment": "VoiceOver help for the menu bar icon"
     },
+    "Conditions": {},
+    "Conditions now": {},
+    "Connected to “%@”": {
+      "comment": "Test view: Wi-Fi"
+    },
+    "Connection": {},
+    "Continue": {},
+    "Couldn't keep awake": {
+      "comment": "Rule status: assertion failed"
+    },
+    "Couldn't save rules": {
+      "comment": "Rules notice"
+    },
     "Created by Abhijit Roy · Underscore Technology": {},
     "Cup": {
       "comment": "Menu bar icon style"
     },
+    "Delete Rule": {},
+    "Delete Rule…": {},
+    "Delete rule %@": {},
+    "Delete the rule “%@”?": {},
+    "Device": {},
+    "Direction": {},
+    "Disk": {},
     "Dismiss": {},
     "Dismiss %@": {},
+    "Display": {},
+    "Display awake": {
+      "comment": "Rule summary"
+    },
     "Done": {},
+    "Download": {},
+    "Downloading": {
+      "comment": "Rule template name"
+    },
+    "Downloading above %@ for %@": {
+      "comment": "Condition summary"
+    },
     "Durations": {
       "comment": "Main window section"
     },
     "Edit": {},
     "Edit %@": {},
+    "Edit rule %@": {},
+    "Enable rule %@": {},
     "Ending soon": {},
+    "Ends": {},
+    "Ends in %@": {
+      "comment": "Rule status: linger countdown"
+    },
+    "Event in “%@” in progress": {
+      "comment": "Condition summary"
+    },
+    "Event in “%@” matching “%@” in progress": {
+      "comment": "Condition summary"
+    },
+    "Event matching “%@” in progress": {
+      "comment": "Condition summary"
+    },
+    "Every day": {
+      "comment": "Schedule days"
+    },
     "Extend %@ by 1 hour": {},
     "Extend %@ by 15 minutes": {},
+    "External display connected": {
+      "comment": "Condition summary"
+    },
     "Eye": {
       "comment": "Menu bar icon style"
     },
     "Find uawake in the menu bar": {},
+    "Finish setting up every condition.": {
+      "comment": "Rule editor: why Save is off"
+    },
+    "For 1 hour": {
+      "comment": "Pause all rules"
+    },
+    "For at least": {
+      "comment": "Rule editor: averaging window"
+    },
     "Free and open source under the MIT licence.": {},
     "General": {
       "comment": "Main window section"
     },
+    "Give the rule a name.": {
+      "comment": "Rule editor: why Save is off"
+    },
+    "Grant Access": {},
     "Guard active": {
       "comment": "Status chip"
     },
@@ -106,24 +252,49 @@
     "How uawake looks in the menu bar.": {
       "comment": "Main window section subtitle"
     },
+    "In front now": {
+      "comment": "Test view"
+    },
+    "In use now": {
+      "comment": "Test view"
+    },
     "Indefinite": {
       "comment": "Preset chip: no end time"
     },
     "It reached the %lld-hour limit.": {
       "comment": "Notification detail"
     },
+    "It was set aside, so rules start empty.": {
+      "comment": "Rules notice"
+    },
+    "Just started…": {
+      "comment": "Test view: settling"
+    },
     "Keep Awake": {},
     "Keep awake": {},
+    "Keep awake after conditions end for": {
+      "comment": "Rule editor: linger"
+    },
     "Keep awake for": {},
     "Keep awake until the chosen time": {},
+    "Keep awake when": {},
     "Keep awake: %@": {
       "comment": "Preset chip, VoiceOver"
     },
     "Keep it awake for a while, or until you turn it off.": {},
+    "Keep your Mac awake automatically.": {
+      "comment": "Main window section subtitle"
+    },
     "Keeping your Mac awake": {},
     "Kept awake today: %@": {},
+    "Keynote or PowerPoint is in front": {
+      "comment": "Rule template description"
+    },
     "Last checked": {},
     "Limit sessions without an end time": {},
+    "Location": {
+      "comment": "Permission name"
+    },
     "Low Power Mode": {
       "comment": "Notification title"
     },
@@ -133,44 +304,147 @@
     "Low Power Mode turned on.": {
       "comment": "Notification detail"
     },
+    "Mac": {},
     "Managed": {
       "comment": "Session source: set by the organisation"
     },
     "Manual": {
       "comment": "Session source"
     },
+    "Matching now": {
+      "comment": "Rule status"
+    },
     "Maximum duration": {
       "comment": "Notification title"
     },
     "Maximum: %lld hours": {},
+    "Measuring…": {
+      "comment": "Test view: window not full"
+    },
     "Menu bar icon": {},
+    "Met": {
+      "comment": "Test view: condition state"
+    },
+    "Microphone": {},
+    "Microphone in use": {
+      "comment": "Condition summary"
+    },
     "Move %@ down": {},
     "Move %@ up": {},
     "Move Down": {},
     "Move Up": {},
+    "Name": {},
     "Near a guard limit": {
       "comment": "Status chip"
     },
+    "Needs %@": {
+      "comment": "Rule status: missing permission"
+    },
+    "Needs %@ access": {
+      "comment": "Test view: missing permission"
+    },
+    "Needs access": {
+      "comment": "Test view: condition state"
+    },
+    "Network above %@ for %@": {
+      "comment": "Condition summary"
+    },
+    "Network is busy": {
+      "comment": "Condition type"
+    },
+    "Network name": {},
+    "Network threshold": {},
     "Never": {},
+    "New Rule": {},
+    "New rule from template: %@": {},
+    "No Wi-Fi network name available": {
+      "comment": "Test view: Wi-Fi"
+    },
     "No active sessions": {},
+    "No devices found. Connect it, then choose it here.": {},
+    "No rules yet. Start from one of these, or choose New Rule.": {},
+    "None chosen": {},
+    "None right now": {
+      "comment": "Test view: empty list"
+    },
+    "Not in use": {
+      "comment": "Test view"
+    },
+    "Not matching": {
+      "comment": "Rule status"
+    },
+    "Not met": {
+      "comment": "Test view: condition state"
+    },
+    "Not true now": {
+      "comment": "Test view"
+    },
     "Notifications are off. You can turn them on in System Settings.": {},
     "Notifications are on.": {},
+    "Now %@ · needs %@": {
+      "comment": "Test view: network rate against threshold"
+    },
+    "Off": {
+      "comment": "Rule status"
+    },
+    "On Wi-Fi “%@”": {
+      "comment": "Condition summary"
+    },
+    "On a Wi-Fi network": {
+      "comment": "Condition type"
+    },
+    "On a call": {
+      "comment": "Rule template name"
+    },
     "On battery power": {
       "comment": "Status chip, VoiceOver"
     },
     "On power adapter": {
       "comment": "Status chip, VoiceOver"
     },
+    "On power and on a Wi-Fi network you choose": {
+      "comment": "Rule template description"
+    },
+    "Only during certain hours": {},
+    "Open Rules": {},
     "Open Safety Settings": {},
+    "Open System Settings": {},
+    "Open System Settings for %@ access": {},
     "Open the uawake window": {},
     "Open uawake at login": {},
+    "Other…": {},
+    "Outside active hours": {
+      "comment": "Rule status"
+    },
     "Overview": {
       "comment": "Main window section"
+    },
+    "Pause": {},
+    "Pause Rules": {},
+    "Pause all rules": {},
+    "Paused": {
+      "comment": "Rule status"
+    },
+    "Plugged in at the office": {
+      "comment": "Rule template name"
     },
     "Power adapter": {
       "comment": "Status chip"
     },
+    "Power adapter connected": {
+      "comment": "Condition summary"
+    },
+    "Presenting": {
+      "comment": "Rule template name"
+    },
     "Presets": {},
+    "Processor above %@ for %@": {
+      "comment": "Condition summary: CPU above 50% for 1 min"
+    },
+    "Processor is busy": {
+      "comment": "Condition type"
+    },
+    "Processor threshold": {},
     "Progress": {
       "comment": "Hero progress bar, VoiceOver"
     },
@@ -180,12 +454,35 @@
     "Recording. Type a shortcut, or press Escape to cancel.": {},
     "Remove": {},
     "Remove %@": {},
+    "Remove Condition": {},
+    "Remove condition: %@": {},
     "Restore Defaults": {},
+    "Resume": {},
+    "Resume rules": {},
     "Rule": {
       "comment": "Session source"
     },
+    "Rule editor view": {},
     "Rule: %@": {
       "comment": "Session reason for a rule; the argument is the rule name"
+    },
+    "Rules": {
+      "comment": "Main window section"
+    },
+    "Rules are paused": {
+      "comment": "Test view: overall"
+    },
+    "Rules from a newer version of uawake": {
+      "comment": "Rules notice"
+    },
+    "Rules paused": {
+      "comment": "Pause banner"
+    },
+    "Rules paused until %@": {
+      "comment": "Pause banner"
+    },
+    "Rules paused until tomorrow, %@": {
+      "comment": "Pause banner"
     },
     "Safety": {
       "comment": "Main window section"
@@ -197,6 +494,9 @@
       "comment": "Status chip, VoiceOver"
     },
     "Save": {},
+    "Schedule": {
+      "comment": "Condition type"
+    },
     "Session ending soon": {
       "comment": "Notification title"
     },
@@ -233,17 +533,26 @@
     "Started manually at %@": {
       "comment": "Session subtitle"
     },
+    "Starts": {},
     "Startup, the menu bar click and the global shortcut.": {
       "comment": "Main window section subtitle"
     },
     "Stop": {},
     "Stop %@": {},
     "Stop at low battery": {},
+    "Stop rule %@": {
+      "comment": "Stop button on a rule's session, VoiceOver"
+    },
+    "Stop until this rule's conditions end and return": {},
     "Stop when Low Power Mode turns on": {},
     "Stop when your Mac gets too warm": {},
     "Stopped by %@": {
       "comment": "Banner title: a guard ended a session"
     },
+    "Stopped by you": {
+      "comment": "Rule status"
+    },
+    "Test": {},
     "That preset already exists.": {
       "comment": "Durations settings error"
     },
@@ -269,25 +578,61 @@
     "The battery reached the %lld%% limit.": {
       "comment": "Notification detail"
     },
+    "The camera or microphone is in use": {
+      "comment": "Rule template description"
+    },
+    "The network is busy downloading": {
+      "comment": "Rule template description"
+    },
     "The presets in the menu bar popover.": {
       "comment": "Main window section subtitle"
+    },
+    "The rule stays off until access is allowed.": {},
+    "The rules file couldn't be read": {
+      "comment": "Rules notice"
     },
     "The uawake icon may be hidden by the camera notch or a full menu bar. To make room, hold Command and drag other icons out of the menu bar, or quit menu bar apps you don't need. You can always open uawake again from Applications or Spotlight to show its window, or set a shortcut in Settings.": {},
     "Thermal guard": {
       "comment": "Notification title"
     },
+    "These rules were made by a newer uawake. They are off and can't be edited here.": {
+      "comment": "Rules notice"
+    },
+    "This can't be undone.": {},
+    "This rule has no conditions yet. Add one on the Edit tab.": {},
+    "This rule would be matching now": {
+      "comment": "Test view: overall"
+    },
+    "This rule would not be matching now": {
+      "comment": "Test view: overall"
+    },
+    "Title contains (optional)": {},
+    "True now": {
+      "comment": "Test view"
+    },
+    "True while an app has audio output running, even if it is silent.": {},
     "Turn Off": {},
     "Turn On Notifications": {},
     "Type a shortcut…": {},
     "URL": {
       "comment": "Session source"
     },
+    "USB": {},
+    "USB or Bluetooth device connected": {
+      "comment": "Condition type"
+    },
     "Until": {},
     "Until %@": {
       "comment": "Session title; the argument is a time of day"
     },
+    "Until I turn them back on": {
+      "comment": "Pause all rules"
+    },
     "Until battery %@": {
       "comment": "Session title; the argument is a battery percentage"
+    },
+    "Until tomorrow, 6:00": {
+      "comment": "Pause all rules"
     },
     "Until…": {},
     "Update channel": {},
@@ -295,15 +640,39 @@
       "comment": "Main window section"
     },
     "Updates aren't set up in this build. Release builds check for updates automatically.": {},
+    "Upload": {},
+    "Uploading above %@ for %@": {
+      "comment": "Condition summary"
+    },
     "Use hours, minutes and seconds in that order, like 45m or 1h30m.": {
       "comment": "Durations settings: invalid entry"
     },
+    "Use “%@”": {},
     "Version %@ (%@)": {},
     "Version and credits.": {
       "comment": "Main window section subtitle"
     },
+    "View": {},
+    "Waiting: Low Power Mode is on": {
+      "comment": "Rule status"
+    },
+    "Waiting: Mac cooling down": {
+      "comment": "Rule status"
+    },
+    "Waiting: battery low": {
+      "comment": "Rule status"
+    },
+    "Waiting: restarts in %@": {
+      "comment": "Rule status: guard cool-down"
+    },
     "Warn %lld min before a session ends": {},
     "Warn before a session ends: off": {},
+    "Weekdays": {
+      "comment": "Schedule days"
+    },
+    "Weekends": {
+      "comment": "Schedule days"
+    },
     "Welcome to uawake": {
       "comment": "Welcome window title"
     },
@@ -312,6 +681,9 @@
     },
     "When uawake stops by itself to protect your Mac.": {
       "comment": "Main window section subtitle"
+    },
+    "Xcode is open, or the processor is busy": {
+      "comment": "Rule template description"
     },
     "You can have up to 12 presets.": {
       "comment": "Durations settings error"
@@ -323,9 +695,16 @@
     "Your Mac is too warm to keep awake right now.": {
       "comment": "Popover: start refused"
     },
+    "Your changes apply until uawake quits, but they weren't saved.": {
+      "comment": "Rules notice"
+    },
     "e.g. 45m, 1h30m or indefinite": {},
+    "e.g. Presenting": {},
     "indefinite": {
       "comment": "Session with no end time"
+    },
+    "macOS only shares the Wi-Fi network name with apps that have Location access. uawake never reads where you are.": {
+      "comment": "Permission explanation"
     },
     "macOS refused to keep your Mac awake (error %d).": {
       "comment": "Popover: IOKit error"
@@ -334,6 +713,12 @@
       "comment": "Main window title"
     },
     "uawake keeps your Mac awake when you need it: downloads, presentations, calls and long tasks. It stops by itself at low battery, in Low Power Mode or when your Mac gets too warm.": {},
+    "uawake needs Bluetooth access to see which of your devices are connected.": {
+      "comment": "Permission explanation"
+    },
+    "uawake needs Calendar access to know when an event is in progress. Events never leave your Mac.": {
+      "comment": "Permission explanation"
+    },
     "uawake tells you before a session ends and when a safety guard stops one.": {},
     "uawake — keep your Mac awake": {},
     "uawake: keeping your Mac awake": {

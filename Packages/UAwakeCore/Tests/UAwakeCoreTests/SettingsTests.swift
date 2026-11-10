@@ -15,6 +15,19 @@ struct SettingsTests {
         settings = UAwakeSettings(defaults: defaults)
     }
 
+    @Test func rulesPauseSurvivesARelaunch() {
+        #expect(settings.rulesPause == nil)
+        let until = Date(timeIntervalSinceReferenceDate: 1000)
+        settings.rulesPause = .until(until)
+        #expect(UAwakeSettings(defaults: defaults).rulesPause == .until(until))
+        #expect(defaults.bool(forKey: "RulesPaused"))
+        settings.rulesPause = .indefinitely
+        #expect(UAwakeSettings(defaults: defaults).rulesPause == .indefinitely)
+        #expect(defaults.object(forKey: "RulesPausedUntil") == nil)
+        settings.rulesPause = nil
+        #expect(UAwakeSettings(defaults: defaults).rulesPause == nil)
+    }
+
     @Test func defaultsMatchTheSpec() {
         #expect(settings.policy == GuardPolicy())
         #expect(settings.policy.batteryThreshold == 20)
@@ -37,7 +50,7 @@ struct SettingsTests {
                 "BatteryGuardEnabled", "BatteryGuardThreshold", "LowPowerModeGuardEnabled", "ThermalGuardEnabled",
                 "MaximumCapEnabled", "MaximumCapHours", "DurationPresets", "PrimaryClickAction", "EndWarningMinutes",
                 "ShowsCountdown", "UpdateChannel", "IconStyle", "GlobalShortcutKeyCode", "GlobalShortcutModifiers",
-                "FirstRunCompleted",
+                "FirstRunCompleted", "RulesPaused", "RulesPausedUntil",
             ])
     }
 

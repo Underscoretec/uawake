@@ -8,8 +8,8 @@ final class MainSelection {
 }
 
 /// The main window: a sidebar of sections. Overview repeats the popover's hero and
-/// sessions at a larger size; the rest are settings. Rules (1.0) and Diagnostics (1.2)
-/// join the first sidebar group.
+/// sessions at a larger size; Rules lists the smart triggers; the rest are settings.
+/// Diagnostics (1.2) joins the first sidebar group.
 struct MainWindowView: View {
     let model: AppModel
     @Bindable var selection: MainSelection
@@ -19,6 +19,7 @@ struct MainWindowView: View {
             List(selection: $selection.section) {
                 Section {
                     row(.overview)
+                    row(.rules)
                 }
                 Section(String(localized: "Settings", comment: "Sidebar group")) {
                     ForEach([MainSection.durations, .safety, .appearance, .general, .updates]) { row($0) }
@@ -52,6 +53,7 @@ struct MainWindowView: View {
             .accessibilityAddTraits(.isHeader)
             switch section {
             case .overview: OverviewSection(model: model.popover)
+            case .rules: RulesSectionView(model: model.rules)
             case .durations: DurationsSettingsView(settings: model.settings)
             case .safety: SafetySettingsView()
             case .appearance: AppearanceSettingsView()

@@ -20,3 +20,19 @@ final class FakeDeviceStateMonitor: DeviceStateMonitor, @unchecked Sendable {
         broadcaster.yield(new)
     }
 }
+
+/// Stands in for any ``SignalMonitor``: replays the values the test sends.
+final class FakeSignalMonitor<Value: Sendable>: SignalMonitor, @unchecked Sendable {
+    private let broadcaster = Broadcaster<Value>()
+    private let lock = NSLock()
+    private var value: Value?
+
+    init(_ initial: Value? = nil) { value = initial }
+
+    func updates() -> AsyncStream<Value> { broadcaster.stream(startingWith: lock.withLock { value }) }
+
+    func send(_ new: Value) {
+        lock.withLock { value = new }
+        broadcaster.yield(new)
+    }
+}

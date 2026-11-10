@@ -20,6 +20,7 @@ struct PopoverView: View {
                     if model.showsSessionList {
                         SessionList(model: model, now: context.date)
                     }
+                    RulesStripView(model: model, now: context.date)
                     StatusStrip(chips: model.statusChips)
                 }
                 .padding(16)
@@ -281,7 +282,8 @@ struct SessionCardRow: View {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(row.title).font(.body.weight(.medium)).lineLimit(1)
-                        Text(row.isPaused ? "\(row.subtitle) · Paused" : row.subtitle)
+                        let subtitle = model.ruleSubtitle(row, now: now) ?? row.subtitle
+                        Text(row.isPaused ? "\(subtitle) · Paused" : subtitle)
                             .font(.caption)
                             .foregroundStyle(Color.secondaryText)
                             .lineLimit(1)
@@ -307,7 +309,12 @@ struct SessionCardRow: View {
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
                     .foregroundStyle(Color.secondaryText)
-                    .accessibilityLabel(Text("Stop \(row.title)"))
+                    .accessibilityLabel(
+                        row.source == .rule
+                            ? Text("Stop rule \(row.title)", comment: "Stop button on a rule's session, VoiceOver")
+                            : Text("Stop \(row.title)")
+                    )
+                    .help(row.source == .rule ? Text("Stop until this rule's conditions end and return") : Text("Stop"))
                 }
                 if row.canExtend {
                     ExtendButtons(row: row, model: model)
@@ -315,6 +322,56 @@ struct SessionCardRow: View {
             }
         }
         .padding(large ? 14 : 10)
+    }
+}
+
+/// Rules at a glance: how many match, and "Pause all rules". Hidden when there are no rules.
+struct RulesStripView: View {
+    let model: PopoverViewModel
+    let now: Date
+
+    var body: some View {
+        if let strip = model.rulesStrip(now: now) {
+            let tone: Tone = strip.isPaused ? .caution : .neutral
+            HStack(spacing: 8) {
+                Image(systemName: strip.isPaused ? "pause.circle.fill" : "wand.and.stars")
+                    .foregroundStyle(strip.isPaused ? tone.color : SessionSource.rule.tint)
+                    .accessibilityHidden(true)
+                Text(strip.text).font(.callout.weight(.medium)).monospacedDigit().lineLimit(1)
+                Spacer(minLength: 4)
+                if strip.isPaused {
+                    Button("Resume") { model.resumeRules() }
+                        .buttonStyle(PillButtonStyle(compact: true))
+                        .accessibilityLabel(Text("Resume rules"))
+                        .accessibilityIdentifier("PopoverResumeRules")
+                } else {
+                    Menu {
+                        ForEach(PauseChoice.allCases, id: \.self) { choice in
+                            Button(choice.title) { model.pauseRules(choice) }
+                        }
+                    } label: {
+                        Label("Pause", systemImage: "pause.fill")
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                    .accessibilityLabel(Text("Pause all rules"))
+                    .accessibilityIdentifier("PopoverPauseRules")
+                }
+                Button {
+                    model.openMainWindow(.rules)
+                } label: {
+                    Label("Open Rules", systemImage: "chevron.right")
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .foregroundStyle(Color.secondaryText)
+                .help(Text("Open Rules"))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .card(radius: 12, tint: strip.isPaused ? tone.color : nil)
+            .accessibilityElement(children: .contain)
+        }
     }
 }
 
