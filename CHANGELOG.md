@@ -6,7 +6,29 @@ All notable changes to uawake are recorded here. The format follows
 
 ## [Unreleased]
 
-## [0.1.0] - Unreleased
+## [1.0.0-alpha.2] - 2026-11-11
+
+Second internal alpha (version 1.0.0, build 2): the rules engine. Unsigned; the 8-hour
+performance soak is still to come before 1.0.
+
+### Added
+- Rules: keep the Mac awake automatically while conditions hold. Conditions: an app is open or
+  in front, a call (camera or microphone in use), audio playing, the processor or network busy,
+  the power adapter, an external display, a USB or Bluetooth device, a Wi-Fi network, a calendar
+  event, and a schedule. Match all or any, active hours, a linger time, and system or display mode.
+- Rules section in the main window: templates (Presenting, On a call, Building, Downloading,
+  Plugged in at the office), an editor with a live Test view, and Pause Rules.
+- Rules strip and rule sessions in the popover; guards win over rules, and a rule stopped by a
+  guard waits until five minutes guard-free.
+- Bluetooth, Location (Wi-Fi name) and Calendar permissions, asked only from explicit buttons.
+
+### Fixed
+- The popover sizes to its full content, up to the space below the menu bar, and scrolls only
+  beyond that; it has an "Open uawake" button in the footer.
+- The popover closes on a click outside it, an app switch or Esc.
+- While the main window is open, uawake shows in the Dock and ⌘-Tab; closing it (⌘W) removes it.
+
+## [0.1.0-alpha.1] - 2026-11-08
 
 First internal alpha.
 

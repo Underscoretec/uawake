@@ -3,11 +3,12 @@
 **uawake — keep your Mac awake.**
 
 A free, open-source macOS menu bar app by Underscore Technology. Click once to keep your Mac
-awake, for as long as you need, and uawake tells you what is keeping it awake and why. Safety
+awake, for as long as you need, or let rules do it for you: while you present, are on a call,
+build or download. uawake tells you what is keeping it awake and why. Safety
 guards stop sessions at low battery, in Low Power Mode, when your Mac gets too warm, or after a
 maximum duration.
 
-**Status:** 0.1.0 alpha, in internal testing ([Testing the alpha](#testing-the-alpha)). MIT licence.
+**Status:** 1.0.0 alpha 2, in internal testing ([Testing the alpha](#testing-the-alpha)). MIT licence.
 
 <p>
   <img src="docs/design/screenshots/popover-one-session-light.png" width="300" alt="The uawake popover keeping the Mac awake for one hour, in light mode">
@@ -15,12 +16,19 @@ maximum duration.
 </p>
 <img src="docs/design/screenshots/main-overview-light.png" width="620" alt="The uawake window's Overview">
 
-## Features (0.1)
+## Features (1.0)
 
+- Rules keep the Mac awake automatically while their conditions hold: an app open or in front,
+  a call, audio playing, the processor or network busy, the power adapter, an external display,
+  a USB or Bluetooth device, a Wi-Fi network, a calendar event or a schedule. Match all or any,
+  with active hours and a linger time.
+- Templates to start from (Presenting, On a call, Building, Downloading, Plugged in at the office),
+  a live Test view in the editor, and Pause Rules.
 - Keep the Mac awake indefinitely, for a preset or custom duration, or until a time of day.
 - Several sessions at once, each with a reason you can see in `pmset -g assertions`.
 - Optional display-awake mode, countdown in the menu bar, and a global shortcut.
-- Safety guards: battery limit, Low Power Mode, thermal pressure and a maximum duration, all on by default.
+- Safety guards: battery limit, Low Power Mode, thermal pressure and a maximum duration, all on
+  by default. Guards win over rules too.
 - Notifications before a session ends (with Extend and Stop) and when a guard stops one.
 - Pauses for fast user switching; carries on after the Mac wakes.
 - `uawake://` URL scheme for scripts and automation.
@@ -43,6 +51,7 @@ notifications or launch at login) again after you install it. Updates are manual
 releases arrive: download the new DMG and replace the app in Applications.
 
 Report bugs and ideas in [Issues](https://github.com/Underscoretec/uawake/issues/new/choose).
+Testers: see [docs/TESTERS.md](docs/TESTERS.md) for what to try and what to include in a report.
 
 ## Install from source
 
@@ -75,8 +84,8 @@ From Terminal: `open "uawake://activate?duration=2h&reason=Build"`. Invalid URLs
 
 - No analytics, telemetry or tracking. Nothing about you or your Mac leaves it.
 - The only network traffic is the update check (Sparkle), which you can turn off.
-- uawake does not use the camera or microphone. From 1.0, an optional "On a call" rule will use
-  the camera entitlement only to detect whether a camera is in use; it never reads video.
+- uawake never records from the camera or microphone. The optional "On a call" rule only checks
+  whether a camera or microphone is in use.
 - Session history (from 1.2) stays on your Mac.
 
 ## Development
