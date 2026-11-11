@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/design/uawake-icon/uawake-icon-1024.png" width="128" alt="uawake app icon"></p>
+
 # uawake
 
 **uawake — keep your Mac awake.**

@@ -324,7 +324,7 @@ The session engine and rules engine are tested hardest, because a keep-awake app
 
 - [ ] Name: uawake confirmed. Still to do: formal Class 9 trademark search in India, the US and the EU; register the domain, GitHub repository, Homebrew cask and social handles; always present it as "uawake — keep your Mac awake", since search engines correct the name to "awake".
 - [ ] Apple Developer Program: confirm Underscore Technology's organisation enrollment for Developer ID signing.
-- [ ] Icon and visual identity: commission or design the app icon and menu bar icons.
+- [x] Icon and visual identity: app icon and menu bar icons (`docs/design/uawake-icon/`).
 - [ ] GitHub organisation name for Underscore's open-source work.
 - [ ] Decide whether AI-assisted contributions are welcome, and say so in CONTRIBUTING.
 - [ ] Sandbox spike done. Remaining live checks: fast user switching before 0.1 ships; camera, microphone, audio, USB, display, Bluetooth, Wi-Fi and calendar before 1.0; managed preferences before 1.3.

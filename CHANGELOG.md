@@ -6,6 +6,10 @@ All notable changes to uawake are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- New app icon and menu bar icon ("the cup", from the Underscore logo): steam while awake,
+  plain cup when idle. Appearance keeps Cup, Eye and Bolt; `IconStyle` defaults to `uawake`.
+
 ## [1.0.0-alpha.2] - 2026-11-11
 
 Second internal alpha (version 1.0.0, build 2): the rules engine. Unsigned; the 8-hour

@@ -99,7 +99,7 @@ struct SettingsTests {
     }
 
     @Test func appearanceShortcutAndFirstRun() {
-        #expect(settings.iconStyle == .cup)
+        #expect(settings.iconStyle == .uawake)
         #expect(settings.globalShortcut == nil)
         #expect(!settings.firstRunCompleted)
         settings.iconStyle = .bolt
@@ -113,7 +113,7 @@ struct SettingsTests {
         settings.globalShortcut = nil
         #expect(defaults.object(forKey: "GlobalShortcutKeyCode") == nil)
         defaults.set("rainbow", forKey: "IconStyle")
-        #expect(settings.iconStyle == .cup)
+        #expect(settings.iconStyle == .uawake)
     }
 
     // MARK: Presets

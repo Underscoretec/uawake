@@ -27,7 +27,7 @@ public struct UAwakeSettings {
             SettingsKey.endWarningMinutes.rawValue: 5,
             SettingsKey.showsCountdown.rawValue: false,
             SettingsKey.updateChannel.rawValue: UpdateChannel.stable.rawValue,
-            SettingsKey.iconStyle.rawValue: IconStyle.cup.rawValue,
+            SettingsKey.iconStyle.rawValue: IconStyle.uawake.rawValue,
             SettingsKey.firstRunCompleted.rawValue: false,
         ])
     }
@@ -130,7 +130,7 @@ public struct UAwakeSettings {
     }
 
     public var iconStyle: IconStyle {
-        get { defaults.string(forKey: SettingsKey.iconStyle.rawValue).flatMap(IconStyle.init) ?? .cup }
+        get { defaults.string(forKey: SettingsKey.iconStyle.rawValue).flatMap(IconStyle.init) ?? .uawake }
         nonmutating set { set(newValue.rawValue, .iconStyle) }
     }
 
@@ -253,9 +253,10 @@ public enum SettingsKey: String, CaseIterable, Sendable {
     case rulesPausedUntil = "RulesPausedUntil"
 }
 
-/// Menu bar icon family. The app maps each to an active and an inactive SF Symbol.
+/// Menu bar icon family. The app maps each to an active and an inactive image: the uawake
+/// cup from the asset catalog, the others SF Symbols.
 public enum IconStyle: String, CaseIterable, Sendable {
-    case cup, eye, bolt
+    case uawake, cup, eye, bolt
 }
 
 /// A global shortcut as a virtual key code and a Carbon modifier mask

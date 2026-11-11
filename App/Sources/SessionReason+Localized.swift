@@ -75,6 +75,7 @@ extension EndCondition {
 extension IconStyle {
     var localizedName: String {
         switch self {
+        case .uawake: String(localized: "uawake", comment: "Menu bar icon style: the app's own cup")
         case .cup: String(localized: "Cup", comment: "Menu bar icon style")
         case .eye: String(localized: "Eye", comment: "Menu bar icon style")
         case .bolt: String(localized: "Bolt", comment: "Menu bar icon style")

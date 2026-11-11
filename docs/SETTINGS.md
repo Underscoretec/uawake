@@ -22,7 +22,7 @@ immediately.
 | `EndWarningMinutes` | Integer | `5` | 0–60; 0 = off | Warning before a timed session ends |
 | `ShowsCountdown` | Boolean | `false` | | Remaining time beside the menu bar icon |
 | `UpdateChannel` | String | `stable` | `stable`, `beta` | Sparkle update feed (used once Sparkle is set up) |
-| `IconStyle` | String | `cup` | `cup`, `eye`, `bolt` | Menu bar icon family |
+| `IconStyle` | String | `uawake` | `uawake`, `cup`, `eye`, `bolt` | Menu bar icon family |
 | `GlobalShortcutKeyCode` | Integer | none | macOS virtual key code | Global shortcut key; no shortcut unless both shortcut keys are set |
 | `GlobalShortcutModifiers` | Integer | none | Carbon modifier mask, at least one of ⌘ ⌥ ⌃ (`cmdKey` 256, `shiftKey` 512, `optionKey` 2048, `controlKey` 4096) | Global shortcut modifiers |
 | `FirstRunCompleted` | Boolean | `false` | | Set when the welcome window is dismissed; force `true` to skip first run |

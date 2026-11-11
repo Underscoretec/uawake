@@ -18,7 +18,7 @@ final class WelcomeModel {
         launchesAtLogin = model.launchesAtLogin
     }
 
-    var iconName: String { StatusItemController.symbols(model.settings.iconStyle).inactive }
+    var icon: NSImage { StatusItemController.symbolImage(style: model.settings.iconStyle, active: false) }
 
     /// The status item settles a moment after launch, so check after a short delay.
     func checkIconVisibility() {
@@ -47,8 +47,8 @@ struct WelcomeView: View {
             .fixedSize(horizontal: false, vertical: true)
 
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: welcome.iconName)
-                    .font(.title)
+                Image(nsImage: welcome.icon)
+                    .renderingMode(.template)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Find uawake in the menu bar").font(.headline)

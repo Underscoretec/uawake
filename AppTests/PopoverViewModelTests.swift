@@ -367,5 +367,8 @@ struct PopoverViewModelTests {
         #expect(EndCondition.duration(.seconds(900)).chipTitle == "15 min")
         #expect(GlobalShortcut(keyCode: 49, carbonModifiers: 0x1900).displayString == "⌃⌥⌘Space")
         #expect(StatusItemController.symbols(.cup) == ("cup.and.saucer.fill", "cup.and.saucer"))
+        for active in [true, false] {
+            #expect(StatusItemController.symbolImage(style: .uawake, active: active).size.height == 18)
+        }
     }
 }

@@ -195,15 +195,25 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     ]
     private static var symbolCache: [String: NSImage] = [:]
 
-    /// The menu bar symbol, rasterized once per style and state: drawing a vector symbol
-    /// every second was the largest share of the countdown's CPU cost.
-    private static func symbolImage(style: IconStyle, active: Bool) -> NSImage {
+    /// The menu bar icon, rasterized once per style and state: drawing a vector image
+    /// every second was the largest share of the countdown's CPU cost. The uawake cup is an
+    /// asset-catalog template PDF drawn 18 pt tall; the other styles are SF Symbols.
+    static func symbolImage(style: IconStyle, active: Bool) -> NSImage {
         let name = active ? symbols(style).active : symbols(style).inactive
         if let cached = symbolCache[name] { return cached }
-        let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+        let vector: NSImage?
+        if style == .uawake {
+            vector = (NSImage(named: name)?.copy() as? NSImage).map { image in
+                let height: CGFloat = 18
+                image.size = NSSize(width: (image.size.width * height / image.size.height).rounded(), height: height)
+                return image
+            }
+        } else {
+            vector = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+                .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 14, weight: .regular))
+        }
         guard
-            let vector = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
-                .withSymbolConfiguration(configuration),
+            let vector,
             let bitmap = NSBitmapImageRep(
                 bitmapDataPlanes: nil, pixelsWide: Int(ceil(vector.size.width * 2)),
                 pixelsHigh: Int(ceil(vector.size.height * 2)), bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
@@ -223,6 +233,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
 
     static func symbols(_ style: IconStyle) -> (active: String, inactive: String) {
         switch style {
+        case .uawake: ("MenuBarIcon", "MenuBarIconIdle")
         case .cup: ("cup.and.saucer.fill", "cup.and.saucer")
         case .eye: ("eye.fill", "eye.slash")
         case .bolt: ("bolt.fill", "bolt.slash")

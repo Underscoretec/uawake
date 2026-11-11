@@ -185,15 +185,20 @@ struct SafetySettingsView: View {
 }
 
 struct AppearanceSettingsView: View {
-    @AppStorage(SettingsKey.iconStyle.rawValue) private var iconStyle = IconStyle.cup.rawValue
+    @AppStorage(SettingsKey.iconStyle.rawValue) private var iconStyle = IconStyle.uawake.rawValue
     @AppStorage(SettingsKey.showsCountdown.rawValue) private var showsCountdown = false
 
     var body: some View {
         Form {
             Picker("Menu bar icon", selection: $iconStyle) {
                 ForEach(IconStyle.allCases, id: \.self) { style in
-                    Label(style.localizedName, systemImage: StatusItemController.symbols(style).active)
-                        .tag(style.rawValue)
+                    Label {
+                        Text(style.localizedName)
+                    } icon: {
+                        Image(nsImage: StatusItemController.symbolImage(style: style, active: true))
+                            .renderingMode(.template)
+                    }
+                    .tag(style.rawValue)
                 }
             }
             .pickerStyle(.radioGroup)
@@ -209,7 +214,9 @@ struct AboutView: View {
         let version = info?["CFBundleShortVersionString"] as? String ?? ""
         let build = info?["CFBundleVersion"] as? String ?? ""
         VStack(spacing: 8) {
-            Image(nsImage: NSApplication.shared.applicationIconImage)
+            // The catalog image draws at once; applicationIconImage can show IconServices'
+            // grid placeholder until its async render finishes.
+            Image(nsImage: NSImage(named: "AppIcon") ?? NSApplication.shared.applicationIconImage)
                 .resizable()
                 .frame(width: 64, height: 64)
                 .accessibilityHidden(true)
