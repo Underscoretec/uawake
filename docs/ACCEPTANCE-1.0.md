@@ -117,3 +117,20 @@ once the DMG and zip exist, and `acceptance.sh` removes `build.noindex/tmp` on e
 
 ## Results from the maintainer's checklist
 **Pending.** Add each `docs/CHECKLIST-1.0.md` result here, with the date and build.
+
+## Open items
+
+### Flaky test: `SignalHubTests.everyMonitorTypeIsForwardedAsItsSignal`
+
+**Status:** known issue, fix planned for the next round. It looks like a bug in the test, not in the app.
+
+- **Seen:** 11 Nov 2026 on macOS 27.0.1, Apple M5, while making the app icon change (`343e6b3`).
+  It failed once in three full `make test` runs, so `UAwakeSystem` reported 1 failure out of 31 tests:
+  `Expectation failed: log.signals.suffix(2) == [.load(sample), .wifi(nil)]`
+  (`Packages/UAwakeSystem/Tests/UAwakeSystemTests/SignalHubTests.swift:52`).
+- **Not reproduced on its own:** 8 out of 8 passes with
+  `swift test --filter everyMonitorTypeIsForwardedAsItsSignal`. The next full `make test` passed.
+- **Likely cause (not yet confirmed):** the test sends to two independent monitors (`load`, then
+  `wifi`) and expects their signals in that order. Each source reaches the hub through its own stream,
+  so the order they arrive in isn't guaranteed. The fix is to compare the last two signals ignoring
+  order, or to wait for each signal before sending the next.
