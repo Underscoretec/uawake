@@ -13,29 +13,42 @@ struct PopoverView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
                     .padding(.bottom, 4)
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        BannerList(model: model)
-                        HeroView(model: model, now: context.date)
-                        QuickStartView(model: model, columns: 3)
-                        if model.showsSessionList {
-                            SessionList(model: model, now: context.date)
-                        }
-                        RulesStripView(model: model, now: context.date)
-                        StatusStrip(chips: model.statusChips)
-                    }
-                    .padding(16)
+                    .onGeometryChange(for: CGFloat.self, of: \.size.height) { model.headerHeight = $0 }
+                // The status item sizes the popover from these measured heights and sets
+                // `scrolls` only when they don't fit below the menu bar.
+                if model.scrolls {
+                    ScrollView { middle(now: context.date) }
+                } else {
+                    middle(now: context.date)
                 }
-                Divider()
-                FooterView(model: model, now: context.date, showsQuit: true)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
+                VStack(spacing: 0) {
+                    Divider()
+                    FooterView(model: model, now: context.date, showsQuit: true)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                }
+                .onGeometryChange(for: CGFloat.self, of: \.size.height) { model.footerHeight = $0 }
             }
         }
         .frame(width: 360)
-        .frame(maxHeight: model.maxHeight)
         // A near-opaque backing keeps text contrast independent of the desktop behind.
         .background(Color.popoverBacking.opacity(0.95))
+    }
+
+    private func middle(now: Date) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            BannerList(model: model)
+            HeroView(model: model, now: now)
+            QuickStartView(model: model, columns: 3)
+            if model.showsSessionList {
+                SessionList(model: model, now: now)
+            }
+            RulesStripView(model: model, now: now)
+            StatusStrip(chips: model.statusChips)
+        }
+        .padding(16)
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self, of: \.size.height) { model.middleHeight = $0 }
     }
 
     private var header: some View {

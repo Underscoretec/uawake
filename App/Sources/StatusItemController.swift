@@ -9,6 +9,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     private let model: AppModel
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let popover = NSPopover()
+    /// Space below the anchor for the popover, set each time it opens.
+    private var availableHeight = CGFloat.greatestFiniteMagnitude
     private var ticker: Timer?
     /// The countdown text last drawn in the menu bar, and when (acceptance sampling).
     private(set) var lastCountdown: String?
@@ -29,8 +31,10 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         popover.behavior = keepsPopoverOpen ? .applicationDefined : .transient
         popover.appearance = NSApplication.shared.appearance
         popover.delegate = self
-        popover.contentViewController = NSHostingController(
+        let controller = NSHostingController(
             rootView: PopoverView(model: model.popover).defaultAppStorage(model.settings.defaults))
+        controller.sizingOptions = []  // `fitPopover` sets the size.
+        popover.contentViewController = controller
         if let button = statusItem.button {
             button.target = self
             button.action = #selector(clicked)
@@ -43,6 +47,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         }
         model.popover.showPopover = { [weak self] in self?.showPopover() }
         observe()
+        observeHeight()
         Task { [weak self] in
             for await _ in NotificationCenter.default.notifications(named: UserDefaults.didChangeNotification) {
                 self?.update()
@@ -74,10 +79,35 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         if let screen = view.window?.screen ?? NSScreen.main {
             // Room below the anchor, less the popover's arrow and a margin above the Dock.
             let anchorBottom = view.window?.frame.minY ?? screen.visibleFrame.maxY
-            model.popover.maxHeight = max(200, anchorBottom - screen.visibleFrame.minY - 32)
+            availableHeight = max(200, anchorBottom - screen.visibleFrame.minY - 32)
         }
+        // Measure the unscrolled content now, so the popover opens at its natural size.
+        model.popover.scrolls = false
+        let measure = NSHostingController(
+            rootView: PopoverView(model: model.popover).defaultAppStorage(model.settings.defaults))
+        let natural = measure.sizeThatFits(in: CGSize(width: 360, height: CGFloat.greatestFiniteMagnitude)).height
+        fitPopover(natural: natural)
+        // A transient popover closes on outside clicks, app switches and Esc only while uawake is active.
+        NSApplication.shared.activate()
         popover.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
+    }
+
+    /// Natural height when it fits below the menu bar; otherwise the space there, with the middle scrolling.
+    private func fitPopover(natural: CGFloat) {
+        guard natural > 0, natural < .greatestFiniteMagnitude else { return }
+        model.popover.scrolls = natural > availableHeight
+        popover.contentSize = NSSize(width: 360, height: min(natural, availableHeight).rounded(.up))
+    }
+
+    /// Content changes (sessions, banners, the Until… picker) re-measure through `naturalHeight`.
+    private func observeHeight() {
+        let natural = withObservationTracking {
+            model.popover.naturalHeight
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.observeHeight() }
+        }
+        fitPopover(natural: natural)
     }
 
     func popoverDidClose(_ notification: Notification) {

@@ -65,6 +65,53 @@ final class AppUITests: XCTestCase {
         XCTAssertFalse(popover.text("Sessions").waitForExistence(timeout: 1))
     }
 
+    /// The real NSPopover sizes to its whole content: header to footer on screen with no
+    /// scrolling, idle, with one and two sessions, the Until… picker open, and a banner.
+    @MainActor
+    func testRealPopoverFitsItsContent() throws {
+        let base = ["-UITesting", "-UITestRealPopover", "-UITestDeviceState"]
+        app.launchArguments = base + ["battery", "-UITestOpenURL", "uawake://activate?duration=45m&reason=Render"]
+        app.launch()
+        let popover = app.popovers.firstMatch
+        XCTAssertTrue(popover.text("Started from a link at").waitForExistence(timeout: 10))
+        assertFits(popover, "real-popover-one-session")
+        popover.buttons["Keep awake: 1 hr"].click()
+        XCTAssertTrue(popover.text("Sessions").waitForExistence(timeout: 3))
+        assertFits(popover, "real-popover-two-sessions")
+        popover.buttons["Until…"].click()
+        XCTAssertTrue(popover.buttons["Keep awake until the chosen time"].waitForExistence(timeout: 3))
+        assertFits(popover, "real-popover-until", also: ["Keep awake until the chosen time"])
+        app.terminate()
+
+        app.launchArguments = base + ["battery"]
+        app.launch()
+        XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
+        assertFits(popover, "real-popover-idle")
+        app.terminate()
+
+        app.launchArguments = base + ["lowPower"]
+        app.launch()
+        XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
+        popover.labeled("Keep awake").click()
+        XCTAssertTrue(popover.text("Low Power Mode is on.").waitForExistence(timeout: 3))
+        assertFits(popover, "real-popover-banner")
+    }
+
+    @MainActor
+    private func assertFits(_ popover: XCUIElement, _ name: String, also extra: [String] = []) {
+        sleep(1)  // Let the popover finish resizing.
+        let attachment = XCTAttachment(screenshot: popover.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        XCTAssertEqual(popover.scrollViews.count, 0, "\(name): the popover scrolls")
+        for label in ["Settings…", "Until…", "Battery", "Open uawake"] + extra {
+            let element = popover.text(label)
+            XCTAssertTrue(element.exists, "\(name): no \(label)")
+            XCTAssertTrue(popover.frame.contains(element.frame), "\(name): \(label) is cut off")
+        }
+    }
+
     @MainActor
     func testRefusalBannerOpensSafety() throws {
         app.launchArguments = ["-UITesting", "-UITestDeviceState", "lowPower"]
