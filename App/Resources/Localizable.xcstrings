@@ -146,6 +146,9 @@
     "Click to turn uawake on or off. Option-click or right-click for options.": {
       "comment": "VoiceOver help for the menu bar icon"
     },
+    "Close Window": {
+      "comment": "Menu item"
+    },
     "Conditions": {},
     "Conditions now": {},
     "Connected to “%@”": {
@@ -153,6 +156,9 @@
     },
     "Connection": {},
     "Continue": {},
+    "Copy": {
+      "comment": "Menu item"
+    },
     "Couldn't keep awake": {
       "comment": "Rule status: assertion failed"
     },
@@ -162,6 +168,9 @@
     "Created by Abhijit Roy · Underscore Technology": {},
     "Cup": {
       "comment": "Menu bar icon style"
+    },
+    "Cut": {
+      "comment": "Menu item"
     },
     "Delete Rule": {},
     "Delete Rule…": {},
@@ -187,7 +196,9 @@
     "Durations": {
       "comment": "Main window section"
     },
-    "Edit": {},
+    "Edit": {
+      "comment": "Menu title"
+    },
     "Edit %@": {},
     "Edit rule %@": {},
     "Enable rule %@": {},
@@ -410,7 +421,7 @@
     "Open Safety Settings": {},
     "Open System Settings": {},
     "Open System Settings for %@ access": {},
-    "Open the uawake window": {},
+    "Open uawake": {},
     "Open uawake at login": {},
     "Other…": {},
     "Outside active hours": {
@@ -418,6 +429,9 @@
     },
     "Overview": {
       "comment": "Main window section"
+    },
+    "Paste": {
+      "comment": "Menu item"
     },
     "Pause": {},
     "Pause Rules": {},
@@ -448,10 +462,15 @@
     "Progress": {
       "comment": "Hero progress bar, VoiceOver"
     },
-    "Quit uawake": {},
+    "Quit uawake": {
+      "comment": "Menu item"
+    },
     "Record Shortcut": {},
     "Record a shortcut": {},
     "Recording. Type a shortcut, or press Escape to cancel.": {},
+    "Redo": {
+      "comment": "Menu item"
+    },
     "Remove": {},
     "Remove %@": {},
     "Remove Condition": {},
@@ -496,6 +515,9 @@
     "Save": {},
     "Schedule": {
       "comment": "Condition type"
+    },
+    "Select All": {
+      "comment": "Menu item"
     },
     "Session ending soon": {
       "comment": "Notification title"
@@ -620,6 +642,9 @@
     "USB": {},
     "USB or Bluetooth device connected": {
       "comment": "Condition type"
+    },
+    "Undo": {
+      "comment": "Menu item"
     },
     "Until": {},
     "Until %@": {

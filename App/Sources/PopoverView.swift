@@ -13,17 +13,19 @@ struct PopoverView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
                     .padding(.bottom, 4)
-                VStack(alignment: .leading, spacing: 16) {
-                    BannerList(model: model)
-                    HeroView(model: model, now: context.date)
-                    QuickStartView(model: model, columns: 3)
-                    if model.showsSessionList {
-                        SessionList(model: model, now: context.date)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        BannerList(model: model)
+                        HeroView(model: model, now: context.date)
+                        QuickStartView(model: model, columns: 3)
+                        if model.showsSessionList {
+                            SessionList(model: model, now: context.date)
+                        }
+                        RulesStripView(model: model, now: context.date)
+                        StatusStrip(chips: model.statusChips)
                     }
-                    RulesStripView(model: model, now: context.date)
-                    StatusStrip(chips: model.statusChips)
+                    .padding(16)
                 }
-                .padding(16)
                 Divider()
                 FooterView(model: model, now: context.date, showsQuit: true)
                     .padding(.horizontal, 16)
@@ -31,6 +33,7 @@ struct PopoverView: View {
             }
         }
         .frame(width: 360)
+        .frame(maxHeight: model.maxHeight)
         // A near-opaque backing keeps text contrast independent of the desktop behind.
         .background(Color.popoverBacking.opacity(0.95))
     }
@@ -45,12 +48,6 @@ struct PopoverView: View {
                 Label("Settings…", systemImage: "gearshape")
             }
             .help(Text("Settings…"))
-            Button {
-                model.openMainWindow(.overview)
-            } label: {
-                Label("Open the uawake window", systemImage: "arrow.up.left.and.arrow.down.right")
-            }
-            .help(Text("Open the uawake window"))
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
@@ -392,6 +389,8 @@ struct FooterView: View {
             .foregroundStyle(Color.secondaryText)
             Spacer()
             if showsQuit {
+                Button("Open uawake") { model.openMainWindow(.overview) }
+                    .buttonStyle(PillButtonStyle(compact: true))
                 Button("Quit uawake") { NSApplication.shared.terminate(nil) }
                     .buttonStyle(PillButtonStyle(compact: true))
                     .keyboardShortcut("q")

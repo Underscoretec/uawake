@@ -5,4 +5,5 @@ import AppKit
 let delegate = AppDelegate()
 NSApplication.shared.delegate = delegate
 NSApplication.shared.setActivationPolicy(.accessory)
+NSApplication.shared.mainMenu = makeMainMenu()
 NSApplication.shared.run()

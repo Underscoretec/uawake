@@ -18,7 +18,8 @@ open build.noindex/DerivedData/Build/Products/Release/uawake.app
   (build.noindex is not indexed).
 - It uses your real settings and `rules.json`, so rules you create are real. Delete test rules
   afterwards (Settings… › Rules › the rule › Delete Rule…).
-- Reset the permission prompts to see them again: `tccutil reset All com.underscoretec.uawake`, then relaunch.
+- Reset the permission prompts to see them again (macOS 27's `tccutil` has no `All`; reset per service):
+  `tccutil reset Calendar com.underscoretec.uawake`, `tccutil reset BluetoothAlways com.underscoretec.uawake`, `tccutil reset Camera com.underscoretec.uawake` and `tccutil reset Microphone com.underscoretec.uawake`; Location via System Settings › Privacy & Security › Location Services. Then relaunch.
 - Handy watchers (Terminal): `pmset -g assertions | grep uawake` shows what is held;
   `/usr/bin/log show --predicate 'subsystem == "com.underscoretec.uawake"' --last 10m --info`
   shows the app's own log.
@@ -56,7 +57,7 @@ Rule `BT test`: same condition, Connection **Bluetooth**.
 2. Click **Grant Access**: the macOS prompt appears. Allow. The device list fills in.
 3. Pick the headset or other device, Save. Connect it (or turn it on). Expect a match.
    Disconnect: ends after linger.
-4. Denied case: `tccutil reset Bluetooth com.underscoretec.uawake`, relaunch, add the rule again,
+4. Denied case: `tccutil reset BluetoothAlways com.underscoretec.uawake`, relaunch, add the rule again,
    click **Grant Access** and choose **Don't Allow**. Expect the rule shows **Needs Bluetooth** and
    an **Open System Settings** button, and never starts a session.
 
@@ -91,7 +92,7 @@ Report: pass/fail for each of 1–7; any prompt that appeared.
    **Plugged in at the office** template if the Rules list offers one, then pick the network). Unplug
    the charger: the rule ends after linger; plug in: it matches again.
 6. Turn Wi-Fi off (or join a phone hotspot): the rule ends after linger. Back on the office network: matches again.
-7. Denied case: `tccutil reset Location com.underscoretec.uawake`, relaunch, add a Wi-Fi rule, click
+7. Denied case: reset Location in System Settings › Privacy & Security › Location Services (`tccutil` can't), relaunch, add a Wi-Fi rule, click
    **Grant Access** › **Don't Allow**. Expect **Needs Location** and no session.
 
 Report: pass/fail for 2–7; whether the network name was filled correctly (macOS 26 and later can hide
@@ -124,7 +125,7 @@ Report: pass/fail for each; the download speed you saw.
 
 ## 8. Permission prompts, one more pass
 
-On a fresh `tccutil reset All com.underscoretec.uawake` and relaunch, open every part of the Rules UI
+After resetting every service (see section 0) and relaunching, open every part of the Rules UI
 (list, editor, Test tab, templates, pickers) without clicking any **Grant Access**.
 Report: whether **any** macOS permission prompt (Bluetooth, Location, Calendar, camera, microphone,
 files) appeared. Expected: none; each appears only after its own button.

@@ -71,6 +71,11 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         guard let button = statusItem.button, !popover.isShown else { return }
         model.popover.reload()
         let view = anchor ?? button
+        if let screen = view.window?.screen ?? NSScreen.main {
+            // Room below the anchor, less the popover's arrow and a margin above the Dock.
+            let anchorBottom = view.window?.frame.minY ?? screen.visibleFrame.maxY
+            model.popover.maxHeight = max(200, anchorBottom - screen.visibleFrame.minY - 32)
+        }
         popover.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
     }

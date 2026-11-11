@@ -68,11 +68,11 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
   errors, then the app tests) / `make lint` / `make format` / `make clean` / `make clean-apps`.
 - One package: `cd Packages/<Name> && swift test`.
 - Build output goes in `build.noindex/`; throwaway copies in `build.noindex/tmp`. Stray `uawake.app`
-  copies steal `uawake://`: `make clean-apps`.
+  copies steal `uawake://`: `make clean-apps` (keeps current DerivedData products).
 - App: `build.noindex/DerivedData/Build/Products/Debug/uawake.app`. Check: `pmset -g assertions | grep uawake`.
 - Local builds are ad-hoc signed; Debug omits the hardened runtime, Release has it.
 - `make uitest` runs the UI tests. They need UI automation allowed for Xcode's runner.
-- `make screenshots` regenerates `docs/design/screenshots/` (light and dark, over matching backdrops).
+- `make screenshots` regenerates `docs/design/screenshots/` (light, dark): once per gate, never per fix.
 - `make release`: DMG and zip (`docs/RELEASING.md`); unsigned stub without a Developer ID.
   `scripts/acceptance.sh`, `scripts/perf-sample.sh` give evidence. Never commit `docs/design/reference/`.
 - `make strings` syncs `Localizable.xcstrings`; run it after any UI text change.

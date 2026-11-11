@@ -112,6 +112,9 @@ final class PopoverViewModel {
     private(set) var presets: [EndCondition]
     private(set) var refusal: Refusal?
     var untilTime: Date
+    /// The popover's tallest allowed height: the screen's space below the menu bar. Taller
+    /// content scrolls, so the header and footer always stay on screen.
+    var maxHeight: CGFloat = .infinity
 
     /// Set by ``AppModel``; `nil` in tests that don't involve rules.
     @ObservationIgnored var rules: RulesModel?
