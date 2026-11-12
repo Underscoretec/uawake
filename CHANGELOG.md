@@ -6,6 +6,26 @@ All notable changes to uawake are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0-alpha.5] - 2026-11-12
+
+Fifth internal alpha (version 1.0.0, build 5): the on-screen watermark. Unsigned; the 8-hour
+performance soak is still to come before 1.0.
+
+### Added
+- On-screen watermark (Appearance › "Show watermark on screen", off by default): a click-through
+  overlay on every display while a session is active, showing "1:42 left" or "since 9:50" large
+  with a small "AWAKE · uawake" above. Centred, Tiled (repeated diagonally) or Bouncing (glides
+  around the screen). About 0.1% CPU in each style. Text and
+  timer colours, opacity 5–40% (12% default) and three sizes. On by default: hidden from screen
+  sharing, screenshots and recordings; hidden while presenting or when a full-screen app is in
+  front; the centred style drifts every few minutes. Follows displays as they connect and
+  disconnect. Reduce Motion stops drift and bouncing, Increase Contrast strengthens it, VoiceOver
+  ignores it. Keys `Watermark*` in `docs/SETTINGS.md`.
+- A global shortcut to show or hide the watermark (Appearance; keys `WatermarkShortcutKeyCode`,
+  `WatermarkShortcutModifiers`).
+- `scripts/overnight-test.sh` and `scripts/overnight-report.sh`: log every 30 s overnight and report
+  gaps (sleep), uawake's assertions and macOS sleep and display events.
+
 ## [1.0.0-alpha.4] - 2026-11-12
 
 Fourth internal alpha (version 1.0.0, build 4): the screen stays on, awake time, and an option to
