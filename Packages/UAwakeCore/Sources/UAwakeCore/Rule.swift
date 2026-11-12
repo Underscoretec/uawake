@@ -23,10 +23,13 @@ public struct Rule: Identifiable, Equatable, Sendable, Codable {
     public var lingerSeconds: Int
     /// When set, the rule applies only inside this window.
     public var activeHours: WeeklyWindow?
+    /// On AC power, also prevent all sleep (`PreventSystemSleep`). Off by default.
+    public var preventSleepOnPower: Bool
 
     public init(
         id: UUID = UUID(), name: String, enabled: Bool = true, match: MatchMode = .all, conditions: [Condition],
-        modes: Set<AwakeMode> = [.system], lingerSeconds: Int = Rule.defaultLinger, activeHours: WeeklyWindow? = nil
+        modes: Set<AwakeMode> = [.system], lingerSeconds: Int = Rule.defaultLinger, activeHours: WeeklyWindow? = nil,
+        preventSleepOnPower: Bool = false
     ) {
         self.id = id
         self.name = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.maxNameLength))
@@ -36,13 +39,14 @@ public struct Rule: Identifiable, Equatable, Sendable, Codable {
         self.modes = modes.union([.system])
         self.lingerSeconds = min(max(lingerSeconds, Self.lingerRange.lowerBound), Self.lingerRange.upperBound)
         self.activeHours = activeHours
+        self.preventSleepOnPower = preventSleepOnPower
     }
 
     /// A rule can run only with a name and at least one condition.
     public var isValid: Bool { !name.isEmpty && !conditions.isEmpty }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, enabled, match, conditions, modes, lingerSeconds, activeHours
+        case id, name, enabled, match, conditions, modes, lingerSeconds, activeHours, preventSleepOnPower
     }
 
     /// Missing optional fields take their defaults and out-of-range values are clamped.
@@ -58,7 +62,8 @@ public struct Rule: Identifiable, Equatable, Sendable, Codable {
             conditions: try container.decode([Condition].self, forKey: .conditions),
             modes: Set(try container.decodeIfPresent([AwakeMode].self, forKey: .modes) ?? []),
             lingerSeconds: try container.decodeIfPresent(Int.self, forKey: .lingerSeconds) ?? Self.defaultLinger,
-            activeHours: try container.decodeIfPresent(WeeklyWindow.self, forKey: .activeHours)
+            activeHours: try container.decodeIfPresent(WeeklyWindow.self, forKey: .activeHours),
+            preventSleepOnPower: try container.decodeIfPresent(Bool.self, forKey: .preventSleepOnPower) ?? false
         )
         guard isValid else {
             throw DecodingError.dataCorruptedError(
@@ -76,6 +81,7 @@ public struct Rule: Identifiable, Equatable, Sendable, Codable {
         try container.encode(AwakeMode.allCases.filter(modes.contains), forKey: .modes)
         try container.encode(lingerSeconds, forKey: .lingerSeconds)
         try container.encodeIfPresent(activeHours, forKey: .activeHours)
+        if preventSleepOnPower { try container.encode(true, forKey: .preventSleepOnPower) }
     }
 }
 

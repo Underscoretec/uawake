@@ -22,6 +22,9 @@ public struct Session: Identifiable, Equatable, Sendable {
     public var deadline: Date?
     /// Lifecycle state. An ended session carries its ``EndCause``.
     public var state: SessionState
+    /// Also hold a `PreventSystemSleep` assertion while on AC power, whatever
+    /// ``SessionEngine/preventsSleepOnPower`` says. Rules set it per rule.
+    public let preventsSleepOnPower: Bool
 
     public init(
         id: UUID = UUID(),
@@ -31,7 +34,8 @@ public struct Session: Identifiable, Equatable, Sendable {
         endCondition: EndCondition,
         startedAt: Date,
         deadline: Date?,
-        state: SessionState = .active
+        state: SessionState = .active,
+        preventsSleepOnPower: Bool = false
     ) {
         self.id = id
         self.source = source
@@ -41,6 +45,7 @@ public struct Session: Identifiable, Equatable, Sendable {
         self.startedAt = startedAt
         self.deadline = deadline
         self.state = state
+        self.preventsSleepOnPower = preventsSleepOnPower
     }
 }
 
@@ -51,14 +56,18 @@ public struct SessionRequest: Equatable, Sendable {
     /// ``AwakeMode/system`` is added by the engine if missing.
     public var modes: Set<AwakeMode>
     public var endCondition: EndCondition
+    /// See ``Session/preventsSleepOnPower``.
+    public var preventsSleepOnPower: Bool
 
     public init(
-        source: SessionSource, reason: SessionReason, modes: Set<AwakeMode> = [.system], endCondition: EndCondition
+        source: SessionSource, reason: SessionReason, modes: Set<AwakeMode> = [.system], endCondition: EndCondition,
+        preventsSleepOnPower: Bool = false
     ) {
         self.source = source
         self.reason = reason
         self.modes = modes
         self.endCondition = endCondition
+        self.preventsSleepOnPower = preventsSleepOnPower
     }
 }
 

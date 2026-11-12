@@ -54,6 +54,9 @@ struct Probe: Identifiable, Sendable {
             id: "bluetooth", title: "Connected Bluetooth devices (IOBluetooth)", release: "1.0", run: Probes.bluetooth),
         Probe(id: "wifi", title: "Wi-Fi network name (CoreWLAN)", release: "1.0", run: Probes.wifi),
         Probe(id: "calendar", title: "In-progress calendar events (EventKit)", release: "1.0", run: Probes.calendar),
+        Probe(
+            id: "preventSystemSleep", title: "Create and release PreventSystemSleep assertion", release: "1.0",
+            run: Probes.preventSystemSleep),
         Probe(id: "assertions", title: "Other apps' power assertions", release: "1.2", run: Probes.assertions),
         Probe(
             id: "sleepHistory", title: "Sleep/wake history (sysctl, pmset -g log)", release: "1.2",
@@ -342,6 +345,34 @@ enum Probes {
         return outcome(
             "\(eventStore.calendars(for: .event).count) calendars; \(events.count) in progress: \(titles)",
             .worksWithPermission)
+    }
+
+    /// Creates a PreventSystemSleep assertion, checks powerd lists it for this pid and in the
+    /// system-wide status, then releases it and checks it is gone.
+    static func preventSystemSleep(_ interactive: Bool) async -> ProbeOutcome {
+        let type = "PreventSystemSleep"  // kIOPMAssertPreventSystemSleep is a C macro Swift can't import
+        func ownTypes() -> [String] {
+            var byProcess: Unmanaged<CFDictionary>?
+            _ = IOPMCopyAssertionsByProcess(&byProcess)
+            let processes = byProcess?.takeRetainedValue() as? [NSNumber: [[String: Any]]] ?? [:]
+            return (processes[NSNumber(value: getpid())] ?? []).compactMap { $0["AssertType"] as? String }
+        }
+        func systemLevel() -> Int {
+            var summary: Unmanaged<CFDictionary>?
+            _ = IOPMCopyAssertionsStatus(&summary)
+            return (summary?.takeRetainedValue() as? [String: Int])?[type] ?? -1
+        }
+        var id = IOPMAssertionID(0)
+        let create = IOPMAssertionCreateWithName(
+            type as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn), "uawake probe (on power)" as CFString, &id)
+        guard create == kIOReturnSuccess else { return outcome("Create=\(create)", .blocked) }
+        let listed = ownTypes().contains(type)
+        let level = systemLevel()
+        let release = IOPMAssertionRelease(id)
+        let gone = !ownTypes().contains(type)
+        let result: ProbeResult = listed && release == kIOReturnSuccess && gone ? .works : .limited
+        return outcome(
+            "Create=\(create) listed=\(listed) systemLevel=\(level) Release=\(release) goneAfter=\(gone)", result)
     }
 
     // MARK: 1.2

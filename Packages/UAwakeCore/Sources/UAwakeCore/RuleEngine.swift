@@ -392,7 +392,8 @@ public final class RuleEngine {
         state.hold = nil
         do throws(SessionEngineError) {
             let request = SessionRequest(
-                source: .rule, reason: .rule(name: rule.name), modes: rule.modes, endCondition: .indefinite)
+                source: .rule, reason: .rule(name: rule.name), modes: rule.modes, endCondition: .indefinite,
+                preventsSleepOnPower: rule.preventSleepOnPower)
             state.sessionID = try engine.start(request).id
             return .matching
         } catch {

@@ -20,6 +20,10 @@ public final class DefaultSessionEngine: SessionEngine {
         didSet { if endWarning != oldValue { tick() } }
     }
 
+    public var preventsSleepOnPower = false {
+        didSet { if preventsSleepOnPower != oldValue { syncOnPower() } }
+    }
+
     /// The last state passed to ``apply(_:)``; `nil` until the first one.
     public private(set) var deviceState: DeviceState?
 
@@ -27,6 +31,8 @@ public final class DefaultSessionEngine: SessionEngine {
     @ObservationIgnored private let clock: any SessionClock
     @ObservationIgnored private let guards: [any Guard]
     @ObservationIgnored private var handles: [Session.ID: AssertionHandle] = [:]
+    /// The extra `PreventSystemSleep` assertions held on AC power (``preventsSleepOnPower``).
+    @ObservationIgnored private var onPowerHandles: [Session.ID: AssertionHandle] = [:]
     /// Sessions already warned (or too short to warn) for their current deadline.
     @ObservationIgnored private var warned: Set<Session.ID> = []
     @ObservationIgnored private var eventContinuations: [UUID: AsyncStream<SessionEvent>.Continuation] = [:]
@@ -61,7 +67,8 @@ public final class DefaultSessionEngine: SessionEngine {
             modes: request.modes,
             endCondition: request.endCondition,
             startedAt: now,
-            deadline: nil
+            deadline: nil,
+            preventsSleepOnPower: request.preventsSleepOnPower
         )
         session.deadline = ownDeadline(for: session.endCondition, from: now) ?? capDeadline(for: session)
         if let cause = immediateEnd(of: session) { throw .wouldEndImmediately(cause) }
@@ -69,6 +76,7 @@ public final class DefaultSessionEngine: SessionEngine {
         sessions.append(session)
         if !Self.isWarnable(session) || isTooShortToWarn(session, from: now) { warned.insert(session.id) }
         logger.info("Started \(session.reason.englishDescription, privacy: .public)")
+        syncOnPower()
         emit(.started(session))
         rearm()
         return session
@@ -78,6 +86,7 @@ public final class DefaultSessionEngine: SessionEngine {
         guard let index = sessions.firstIndex(where: { $0.id == id }) else { return }
         var session = sessions.remove(at: index)
         if let handle = handles.removeValue(forKey: id) { assertions.release(handle) }
+        syncOnPower()
         warned.remove(id)
         session.state = .ended(cause)
         logger.info("Ended \(session.reason.englishDescription, privacy: .public): \(cause.rawValue, privacy: .public)")
@@ -119,6 +128,7 @@ public final class DefaultSessionEngine: SessionEngine {
         if let handle = handles.removeValue(forKey: id) { assertions.release(handle) }
         sessions[index].state = .paused(remaining: remaining)
         sessions[index].deadline = nil
+        syncOnPower()
         logger.info("Paused \(session.reason.englishDescription, privacy: .public)")
         emit(.paused(sessions[index]))
         rearm()
@@ -131,6 +141,7 @@ public final class DefaultSessionEngine: SessionEngine {
         handles[id] = try assertions.acquire(modes: session.modes, reason: session.reason.englishDescription)
         sessions[index].state = .active
         sessions[index].deadline = remaining.map { clock.now + $0.timeInterval } ?? capDeadline(for: session)
+        syncOnPower()
         logger.info("Resumed \(session.reason.englishDescription, privacy: .public)")
         emit(.resumed(sessions[index]))
         tick()
@@ -141,6 +152,7 @@ public final class DefaultSessionEngine: SessionEngine {
     public func apply(_ state: DeviceState) {
         deviceState = state
         applyDeviceState()
+        syncOnPower()
     }
 
     public func handle(_ event: SessionLifecycleEvent) {
@@ -174,6 +186,30 @@ public final class DefaultSessionEngine: SessionEngine {
 
     private func emit(_ event: SessionEvent) {
         for continuation in eventContinuations.values { continuation.yield(event) }
+    }
+
+    // MARK: On power
+
+    /// Holds a `PreventSystemSleep` assertion for each active session that wants one
+    /// while on AC power, and releases the rest. A failed acquire is logged and retried
+    /// on the next change; the session's normal assertions are unaffected.
+    private func syncOnPower() {
+        let onAC = deviceState?.powerSource == .ac
+        let wanted = Set(
+            sessions.filter {
+                onAC && $0.state == .active && ($0.preventsSleepOnPower || ($0.source != .rule && preventsSleepOnPower))
+            }.map(\.id))
+        for (id, handle) in onPowerHandles where !wanted.contains(id) {
+            assertions.release(handle)
+            onPowerHandles[id] = nil
+        }
+        for session in sessions where wanted.contains(session.id) && onPowerHandles[session.id] == nil {
+            do throws(SessionEngineError) {
+                onPowerHandles[session.id] = try assertions.acquireOnPower(reason: session.reason.englishDescription)
+            } catch {
+                logger.warning("On-power assertion failed: \(String(describing: error), privacy: .public)")
+            }
+        }
     }
 
     // MARK: Guards

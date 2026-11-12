@@ -20,6 +20,13 @@ public protocol SessionEngine: AnyObject {
     /// than the lead time are not warned.
     var endWarning: Duration? { get set }
 
+    /// "On the power adapter, prevent all sleep". While the last device state is on
+    /// AC power, every active non-rule session also holds a `PreventSystemSleep`
+    /// assertion named `uawake: <reason> (on power)`; rule sessions hold one only when
+    /// their rule asks (``Session/preventsSleepOnPower``). Dropped on battery or
+    /// unknown power; the normal assertions stay.
+    var preventsSleepOnPower: Bool { get set }
+
     /// Starts a session and acquires its assertions before returning.
     /// - Throws: ``SessionEngineError/wouldEndImmediately(_:)`` if a guard or the
     ///   session's own battery level already applies to the last device state;

@@ -31,6 +31,7 @@ uawake (`app-sandbox`, `network.client`). Probe-only extras: `device.bluetooth`,
 | Connected Bluetooth devices (IOBluetooth) | 1.0 | Pending manual check | Bluetooth entitlement and prompt | Permission not yet requested. | Pending manual check (1.0). |
 | Wi-Fi network name (CoreWLAN) | 1.0 | Blocked without Location; pending with it | Location entitlement and prompt | Without Location: interface `en0`, powered on, SSID `nil`. Not yet tested after granting. | Pending manual check (1.0). |
 | In-progress calendar events (EventKit) | 1.0 | Pending manual check | Calendars entitlement and full-access prompt | Permission not yet requested. | Pending manual check (1.0). |
+| Create and release `PreventSystemSleep` | 1.0 | Works | None | Rerun 12 Nov 2026 (same Mac, macOS 27.0.1). `IOPMAssertionCreateWithName("PreventSystemSleep")` returned 0; `IOPMCopyAssertionsByProcess` listed it for the probe's pid; release returned 0 and it was gone. The system-wide `PreventSystemSleep` level read 0 because the Mac was on battery, where powerd ignores this type. | Pending manual check on AC power (level 1, `pmset -g assertions`). |
 | Other apps' power assertions | 1.2 | Works | None | `IOPMCopyAssertionsByProcess` lists other pids with assertion type and name (powerd, caffeinate, HID). `IOPMCopyAssertionsStatus` gives system-wide levels. | — |
 | Sleep/wake history | 1.2 | Limited | — | `pmset -g log` runs but is blocked from its data: "no messages found in PM ASL data store at: /var/log/powermanagement" (unsandboxed: ~36k lines, 523 sleeps). `sysctl kern.sleeptime` and `kern.waketime` give only the last sleep and wake. | Record sleep/wake events from `NSWorkspace` in the 1.2 history database from install onward. Backfill the 7 days through the CLI (outside the sandbox), or drop backfill. |
 | Managed preferences (`objectIsForced`) | 1.3 | Pending manual check | — | No profile installed: `objectIsForced = false`, as expected. | Pending manual check (1.3). |
@@ -40,6 +41,8 @@ uawake (`app-sandbox`, `network.client`). Probe-only extras: `device.bluetooth`,
 - **1.0:** live camera, microphone and audio-output in-use; USB attach/detach; external display
   connect/disconnect; Bluetooth after granting; Wi-Fi SSID after granting Location; calendar
   events after granting.
+- **1.0:** `PreventSystemSleep` takes effect on AC power (system level 1, `uawake … (on power)` in
+  `pmset -g assertions`).
 - **1.3:** managed preferences via the test profile.
 
 ## How to run the probe

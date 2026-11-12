@@ -8,6 +8,10 @@ public protocol AssertionProvider: Sendable {
     /// All-or-nothing: on failure, anything already created is released.
     func acquire(modes: Set<AwakeMode>, reason: String) throws(SessionEngineError) -> AssertionHandle
 
+    /// Creates one `PreventSystemSleep` assertion named `uawake: <reason> (on power)`.
+    /// powerd honours it only on AC power; the engine holds it only then.
+    func acquireOnPower(reason: String) throws(SessionEngineError) -> AssertionHandle
+
     /// Releases every assertion in `handle`. Releasing twice is a no-op.
     func release(_ handle: AssertionHandle)
 }

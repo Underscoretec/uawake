@@ -26,6 +26,7 @@ public struct UAwakeSettings {
             SettingsKey.primaryClickAction.rawValue: "indefinite",
             SettingsKey.endWarningMinutes.rawValue: 5,
             SettingsKey.showsCountdown.rawValue: false,
+            SettingsKey.preventSleepOnPower.rawValue: false,
             SettingsKey.updateChannel.rawValue: UpdateChannel.stable.rawValue,
             SettingsKey.iconStyle.rawValue: IconStyle.uawake.rawValue,
             SettingsKey.firstRunCompleted.rawValue: false,
@@ -120,6 +121,12 @@ public struct UAwakeSettings {
 
     public var endWarning: Duration? {
         endWarningMinutes > 0 ? .seconds(endWarningMinutes * 60) : nil
+    }
+
+    /// "On the power adapter, prevent all sleep" (`caffeinate -s`). Off by default.
+    public var preventSleepOnPower: Bool {
+        get { bool(.preventSleepOnPower, default: false) }
+        nonmutating set { set(newValue, .preventSleepOnPower) }
     }
 
     // MARK: Appearance and updates
@@ -251,6 +258,7 @@ public enum SettingsKey: String, CaseIterable, Sendable {
     case firstRunCompleted = "FirstRunCompleted"
     case rulesPaused = "RulesPaused"
     case rulesPausedUntil = "RulesPausedUntil"
+    case preventSleepOnPower = "PreventSleepOnPower"
 }
 
 /// Menu bar icon family. The app maps each to an active and an inactive image: the uawake
@@ -289,6 +297,7 @@ extension DefaultSessionEngine {
     public func apply(_ settings: UAwakeSettings) {
         policy = settings.policy
         endWarning = settings.endWarning
+        preventsSleepOnPower = settings.preventSleepOnPower
     }
 }
 

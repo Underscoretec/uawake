@@ -44,7 +44,7 @@ struct RuleModelTests {
         #expect(Set(Self.everyCondition.map(\.kind)) == Set(ConditionKind.allCases))
         let rule = Rule(
             name: "Everything", match: .any, conditions: Self.everyCondition, modes: [.display, .disk],
-            lingerSeconds: 300, activeHours: Self.nineToSeven)
+            lingerSeconds: 300, activeHours: Self.nineToSeven, preventSleepOnPower: true)
         let decoded = try JSONDecoder().decode(Rule.self, from: JSONEncoder().encode(rule))
         #expect(decoded == rule)
         #expect(decoded.modes == [.system, .display, .disk])
@@ -65,6 +65,7 @@ struct RuleModelTests {
         #expect(rule.modes == [.system])
         #expect(rule.lingerSeconds == 3600)
         #expect(rule.activeHours == nil)
+        #expect(!rule.preventSleepOnPower)
         #expect(
             rule.conditions == [
                 .cpuBusy(percent: 10, windowSeconds: 30),

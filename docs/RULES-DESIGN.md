@@ -31,6 +31,7 @@ Gate C live session. The maintainer's answers to the Gate A questions are in
 | `modes` | Array of `system`, `display`, `disk` | `["system"]` | `system` is always added |
 | `lingerSeconds` | Int | `120` | 0–3600 |
 | `activeHours` | Optional weekly window | none | `{ "days": ["mon",…], "start": "09:00", "end": "19:00" }` |
+| `preventSleepOnPower` | Bool | `false` | On AC power, also hold `PreventSystemSleep` (`uawake: Rule: <name> (on power)`). Written only when `true` |
 
 The name is the session reason, so it appears in `pmset -g assertions` as `uawake: Rule: <name>`.
 

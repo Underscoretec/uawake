@@ -6,6 +6,13 @@ All notable changes to uawake are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+- "On the power adapter, prevent all sleep" (General, off by default): on AC power, sessions also
+  hold a `PreventSystemSleep` assertion, like `caffeinate -s`, shown in `pmset -g assertions` as
+  `uawake: <reason> (on power)`. It is dropped on battery. Rules get the same option in the editor.
+  Closing the lid still sleeps the Mac unless an external display is connected. Setting key
+  `PreventSleepOnPower`; rule field `preventSleepOnPower`.
+
 ## [1.0.0-alpha.3] - 2026-11-11
 
 Third internal alpha (version 1.0.0, build 3): the new icon. Unsigned; the 8-hour performance

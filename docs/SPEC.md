@@ -72,6 +72,7 @@ A session is the unit everything works with. Each session has:
 
 - Several sessions can run at once. The Mac stays awake while any session is active, using the combined modes of all active sessions.
 - Each session holds its own IOKit assertions, named `uawake: <reason>`, so they show up in `pmset -g assertions`. Assertion names stay in English; reasons are localised only in the app's UI.
+- **On the power adapter, prevent all sleep** (General, off by default, from 1.0): while the Mac is on AC power, each session also holds a `PreventSystemSleep` assertion, like `caffeinate -s`, named `uawake: <reason> (on power)`. When the Mac switches to battery that assertion is released and the normal ones stay; it returns on AC. Rules have the same option per rule instead. Closing the lid still sleeps the Mac unless an external display is connected (lid-closed awake stays a 2.0 Pro helper feature).
 - Ending a session releases its assertions immediately. If the app quits or crashes, macOS releases them automatically.
 - Every session end records a cause: expired, stopped by user, battery guard, Low Power Mode, thermal guard, maximum cap, app quit.
 
@@ -129,7 +130,7 @@ Invalid URLs change nothing and log a warning; they never leave the UI out of sy
 
 ### Settings window
 
-Tabs: General (launch at login, primary click action, shortcut), Durations, Safety, Appearance (icon style, countdown text), Updates (Sparkle channel: stable or beta), About (version, credits, licence).
+Tabs: General (launch at login, primary click action, shortcut, on the power adapter prevent all sleep), Durations, Safety, Appearance (icon style, countdown text), Updates (Sparkle channel: stable or beta), About (version, credits, licence).
 
 ### First run
 
@@ -186,6 +187,7 @@ Permissions are requested only when a user adds a rule that needs them. Without 
 
 - A Rules tab in Settings lists rules with on/off switches and a live indicator showing which rules are matching right now.
 - The editor builds a rule from condition rows, with app pickers, device pickers and threshold sliders, not free text.
+- Each rule has the same "On the power adapter, prevent all sleep" option as General, off by default.
 - A "Test" view shows each condition's current value, e.g. CPU 34% against a 50% threshold.
 - Starter templates: Presenting (Keynote or PowerPoint frontmost), On a call, Building (Xcode or a CPU threshold), Downloading (network threshold), Plugged in at the office (power plus Wi-Fi).
 

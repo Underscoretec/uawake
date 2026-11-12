@@ -129,6 +129,15 @@ struct RuleEngineTests {
         #expect(rules.rule(forSession: engine.sessions[0].id)?.name == "Presenting")
     }
 
+    @Test func ruleCanPreventAllSleepOnPower() {
+        engine.apply(Self.ac)
+        var building = rule("Building", [.appRunning(Self.xcode)])
+        building.preventSleepOnPower = true
+        let rules = makeRules([building])
+        rules.update(apps([Self.xcode]))
+        #expect(Set(assertions.live.values) == ["uawake: Rule: Building", "uawake: Rule: Building (on power)"])
+    }
+
     @Test func zeroLingerEndsAtOnce() {
         let rules = makeRules([rule([.powerAdapter], linger: 0)])
         rules.update(.power(Self.ac))

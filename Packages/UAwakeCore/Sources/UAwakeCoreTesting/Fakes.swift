@@ -63,6 +63,17 @@ public final class FakeAssertionProvider: AssertionProvider, @unchecked Sendable
         return AssertionHandle(ids: ids)
     }
 
+    public func acquireOnPower(reason: String) throws(SessionEngineError) -> AssertionHandle {
+        let id: UInt32? = lock.withLock {
+            if failure != nil { return nil }
+            defer { nextID += 1 }
+            _live[nextID] = "uawake: \(reason) (on power)"
+            return nextID
+        }
+        guard let id else { throw .assertionFailed(code: failure ?? -1) }
+        return AssertionHandle(ids: [id])
+    }
+
     public func release(_ handle: AssertionHandle) {
         lock.withLock { for id in handle.ids { _live[id] = nil } }
     }

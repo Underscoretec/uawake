@@ -53,7 +53,11 @@ main-actor tasks sleeping on the injected `SessionClock`.
 `acquire(modes:reason:)` creates one IOKit assertion per mode named
 `uawake: <reason>` (always English) and returns an `AssertionHandle`; `release`
 frees them. Modes map to `PreventUserIdleSystemSleep`, `PreventUserIdleDisplaySleep`,
-`PreventDiskIdle`. The fake records live handles so tests assert "nothing leaked".
+`PreventDiskIdle`. `acquireOnPower(reason:)` creates one `PreventSystemSleep` assertion named
+`uawake: <reason> (on power)`; the engine holds it per active session only while the last device
+state is on AC power and `preventsSleepOnPower` (non-rule sessions) or the session's own
+`preventsSleepOnPower` (rules) asks for it. A failed on-power acquire is logged, never fatal.
+The fake records live handles so tests assert "nothing leaked".
 The IOKit conformer lives in UAwakeSystem so Core stays Foundation-only.
 
 **Threading:** `Sendable`, synchronous; IOKit calls are thread-safe and cheap.

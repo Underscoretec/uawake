@@ -2,11 +2,18 @@ import SwiftUI
 import UAwakeCore
 
 struct GeneralSettingsView: View {
+    /// Shared with the rule editor's option of the same name.
+    static let onPowerHelp = String(
+        localized:
+            "While your Mac is on the power adapter, sessions also stop it sleeping on its own, like caffeinate -s. On battery, they go back to normal. Closing the lid still sleeps your Mac unless an external display is connected.",
+        comment: "Settings and rule editor: help for “On the power adapter, prevent all sleep”")
+
     let model: AppModel
     @State private var launchesAtLogin = false
     @State private var shortcut: GlobalShortcut?
     @State private var shortcutProblem: String?
     @AppStorage(SettingsKey.primaryClickAction.rawValue) private var primaryClickAction = "indefinite"
+    @AppStorage(SettingsKey.preventSleepOnPower.rawValue) private var preventSleepOnPower = false
 
     var body: some View {
         Form {
@@ -28,6 +35,11 @@ struct GeneralSettingsView: View {
                 }
             }
             .onChange(of: shortcut) { _, new in shortcutProblem = model.setShortcut(new) }
+            Section {
+                Toggle("On the power adapter, prevent all sleep", isOn: $preventSleepOnPower)
+            } footer: {
+                Text(Self.onPowerHelp)
+            }
         }
         .formStyle(.grouped)
         .onAppear {

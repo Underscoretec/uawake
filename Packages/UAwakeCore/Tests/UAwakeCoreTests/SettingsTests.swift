@@ -40,6 +40,7 @@ struct SettingsTests {
         #expect(settings.primaryClickAction == .indefinite)
         #expect(settings.endWarning == .seconds(300))
         #expect(settings.showsCountdown == false)
+        #expect(settings.preventSleepOnPower == false)
         #expect(settings.updateChannel == .stable)
         #expect(!settings.isManaged(.batteryGuardThreshold))
     }
@@ -50,7 +51,7 @@ struct SettingsTests {
                 "BatteryGuardEnabled", "BatteryGuardThreshold", "LowPowerModeGuardEnabled", "ThermalGuardEnabled",
                 "MaximumCapEnabled", "MaximumCapHours", "DurationPresets", "PrimaryClickAction", "EndWarningMinutes",
                 "ShowsCountdown", "UpdateChannel", "IconStyle", "GlobalShortcutKeyCode", "GlobalShortcutModifiers",
-                "FirstRunCompleted", "RulesPaused", "RulesPausedUntil",
+                "FirstRunCompleted", "RulesPaused", "RulesPausedUntil", "PreventSleepOnPower",
             ])
     }
 

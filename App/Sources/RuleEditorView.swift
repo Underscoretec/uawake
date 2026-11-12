@@ -94,7 +94,8 @@ struct RuleEditorView: View {
             Rule(
                 id: draft.id, name: model.uniqueName(trimmedName, excluding: draft.id), enabled: draft.enabled,
                 match: draft.match, conditions: draft.conditions, modes: draft.modes,
-                lingerSeconds: draft.lingerSeconds, activeHours: draft.activeHours))
+                lingerSeconds: draft.lingerSeconds, activeHours: draft.activeHours,
+                preventSleepOnPower: draft.preventSleepOnPower))
         dismiss()
     }
 }
@@ -139,8 +140,11 @@ private struct RuleEditTab: View {
                 DurationPicker(
                     title: String(localized: "Keep awake after conditions end for", comment: "Rule editor: linger"),
                     seconds: $draft.lingerSeconds, options: Self.lingerOptions)
+                Toggle("On the power adapter, prevent all sleep", isOn: $draft.preventSleepOnPower)
             } header: {
                 Text("Keep awake").accessibilityAddTraits(.isHeader)
+            } footer: {
+                Text(GeneralSettingsView.onPowerHelp)
             }
             Section {
                 Toggle("Only during certain hours", isOn: activeHoursOn)

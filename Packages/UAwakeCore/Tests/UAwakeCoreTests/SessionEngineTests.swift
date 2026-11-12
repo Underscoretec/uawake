@@ -340,6 +340,54 @@ struct SessionEngineTests {
         #expect(SessionReason.rule(name: "On a call").englishDescription == "Rule: On a call")
         #expect(SessionReason.custom("Render").englishDescription == "Render")
     }
+
+    // MARK: On power
+
+    @Test func onPowerHoldsPreventSystemSleepOnlyOnACAndOnlyWhileActive() throws {
+        let onPower = "uawake: Manual: indefinite (on power)"
+        engine.apply(.test(source: .ac))
+        let session = try engine.start(request(.indefinite))
+        #expect(assertions.live.count == 1)  // Setting off.
+        engine.preventsSleepOnPower = true
+        #expect(Set(assertions.live.values) == ["uawake: Manual: indefinite", onPower])
+        engine.apply(.test(source: .battery))
+        #expect(Array(assertions.live.values) == ["uawake: Manual: indefinite"])
+        engine.apply(.test(source: .ac))
+        #expect(assertions.live.values.contains(onPower))
+        try engine.pause(session.id)
+        #expect(assertions.live.isEmpty)
+        try engine.resume(session.id)
+        #expect(assertions.live.count == 2)
+        engine.preventsSleepOnPower = false
+        #expect(assertions.live.count == 1)
+        engine.preventsSleepOnPower = true
+        engine.stop(session.id, cause: .stoppedByUser)
+        #expect(assertions.live.isEmpty)
+    }
+
+    @Test func onPowerSettingSkipsRuleSessionsButTheRuleFlagHoldsIt() throws {
+        engine.apply(.test(source: .ac))
+        engine.preventsSleepOnPower = true
+        try engine.start(SessionRequest(source: .rule, reason: .rule(name: "A"), endCondition: .indefinite))
+        #expect(assertions.live.count == 1)
+        engine.preventsSleepOnPower = false
+        try engine.start(
+            SessionRequest(
+                source: .rule, reason: .rule(name: "B"), endCondition: .indefinite, preventsSleepOnPower: true))
+        #expect(assertions.live.values.contains("uawake: Rule: B (on power)"))
+        #expect(assertions.live.count == 3)
+    }
+
+    @Test func failedOnPowerAcquireKeepsTheSession() throws {
+        let session = try engine.start(request(.indefinite))
+        engine.preventsSleepOnPower = true
+        assertions.failure = -1
+        engine.apply(.test(source: .ac))
+        #expect(engine.sessions.map(\.id) == [session.id])
+        assertions.failure = nil
+        engine.apply(.test(source: .ac))
+        #expect(assertions.live.count == 2)
+    }
 }
 
 extension SessionEvent {
