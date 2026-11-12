@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var previewWindow: NSWindow?
     private var standIn: NSWindow?
     private var backdrop: NSWindow?
+    private var watermark: WatermarkController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Hosting unit tests: they build their own models; show nothing.
@@ -38,12 +39,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             sampleCountdown(every: interval, model: model, statusItem: statusItem)
         }
 
-        if options.headless {
-            return
-        } else if options.uiTesting {
+        if options.headless { return }
+        watermark = WatermarkController(model: model.popover, settings: model.settings)
+        if options.uiTesting {
             model.popover.showPopover = {}  // The stand-in is already on screen.
             if let backdrop = options.backdrop { showBackdrop(dark: backdrop == "dark") }
-            if options.showsMainWindow {
+            if options.showsWatermark {
+                // Watermark screenshots: the backdrop just under the watermark, over other apps, clear of the menu
+                // bar and Dock, and nothing else.
+                self.backdrop?.level = NSWindow.Level(rawValue: WatermarkController.level.rawValue - 1)
+                if let visible = NSScreen.main?.visibleFrame { self.backdrop?.setFrame(visible, display: true) }
+            } else if options.showsMainWindow {
                 mainWindow.show(section: options.rulesFixture && options.showsRulesSection ? .rules : .overview)
             } else if options.showsRealPopover {
                 showRealPopover(statusItem)
@@ -122,6 +128,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.backgroundColor = dark ? NSColor(white: 0.08, alpha: 1) : NSColor(white: 0.93, alpha: 1)
         window.level = .normal
         window.ignoresMouseEvents = true
+        window.title = "Backdrop"
+        window.identifier = NSUserInterfaceItemIdentifier("Backdrop")
         window.orderFrontRegardless()
         backdrop = window
     }
@@ -175,6 +183,8 @@ struct LaunchOptions {
     var showsRealPopover = false
     var showsMenuBarPreview = false
     var showsCountdown = false
+    /// Watermark screenshots (`-UITestWatermark`): the backdrop only, raised over other apps.
+    var showsWatermark = false
     var appearance: NSAppearance.Name?
     var deviceState: DeviceState?
     var crowdMenuBar: Int?
@@ -208,6 +218,7 @@ struct LaunchOptions {
         showsRealPopover = arguments.contains("-UITestRealPopover")
         showsMenuBarPreview = arguments.contains("-UITestMenuBarPreview")
         showsCountdown = arguments.contains("-UITestCountdown")
+        showsWatermark = arguments.contains("-UITestWatermark")
         switch value(after: "-UITestAppearance") {
         case "dark": appearance = .darkAqua
         case "light": appearance = .aqua

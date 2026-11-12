@@ -31,6 +31,15 @@ public struct UAwakeSettings {
             SettingsKey.updateChannel.rawValue: UpdateChannel.stable.rawValue,
             SettingsKey.iconStyle.rawValue: IconStyle.uawake.rawValue,
             SettingsKey.firstRunCompleted.rawValue: false,
+            SettingsKey.watermarkEnabled.rawValue: false,
+            SettingsKey.watermarkStyle.rawValue: WatermarkStyle.centred.rawValue,
+            SettingsKey.watermarkTextColour.rawValue: "blue",
+            SettingsKey.watermarkTimerColour.rawValue: "blue",
+            SettingsKey.watermarkOpacity.rawValue: 12,
+            SettingsKey.watermarkSize.rawValue: WatermarkSize.medium.rawValue,
+            SettingsKey.watermarkHiddenFromCapture.rawValue: true,
+            SettingsKey.watermarkHiddenInFullScreen.rawValue: true,
+            SettingsKey.watermarkDrifts.rawValue: true,
         ])
     }
 
@@ -156,21 +165,31 @@ public struct UAwakeSettings {
 
     /// `nil` when no shortcut is set (the default).
     public var globalShortcut: GlobalShortcut? {
-        get {
-            guard let keyCode = defaults.object(forKey: SettingsKey.globalShortcutKeyCode.rawValue) as? Int,
-                let modifiers = defaults.object(forKey: SettingsKey.globalShortcutModifiers.rawValue) as? Int,
-                (0...0xFFFF).contains(keyCode), modifiers > 0
-            else { return nil }
-            return GlobalShortcut(keyCode: keyCode, carbonModifiers: modifiers)
-        }
-        nonmutating set {
-            if let newValue {
-                set(newValue.keyCode, .globalShortcutKeyCode)
-                set(newValue.carbonModifiers, .globalShortcutModifiers)
-            } else {
-                defaults.removeObject(forKey: SettingsKey.globalShortcutKeyCode.rawValue)
-                defaults.removeObject(forKey: SettingsKey.globalShortcutModifiers.rawValue)
-            }
+        get { shortcut(.globalShortcutKeyCode, .globalShortcutModifiers) }
+        nonmutating set { setShortcut(newValue, .globalShortcutKeyCode, .globalShortcutModifiers) }
+    }
+
+    /// Shows or hides the watermark. `nil` when not set (the default).
+    public var watermarkShortcut: GlobalShortcut? {
+        get { shortcut(.watermarkShortcutKeyCode, .watermarkShortcutModifiers) }
+        nonmutating set { setShortcut(newValue, .watermarkShortcutKeyCode, .watermarkShortcutModifiers) }
+    }
+
+    private func shortcut(_ keyCodeKey: SettingsKey, _ modifiersKey: SettingsKey) -> GlobalShortcut? {
+        guard let keyCode = defaults.object(forKey: keyCodeKey.rawValue) as? Int,
+            let modifiers = defaults.object(forKey: modifiersKey.rawValue) as? Int,
+            (0...0xFFFF).contains(keyCode), modifiers > 0
+        else { return nil }
+        return GlobalShortcut(keyCode: keyCode, carbonModifiers: modifiers)
+    }
+
+    private func setShortcut(_ shortcut: GlobalShortcut?, _ keyCodeKey: SettingsKey, _ modifiersKey: SettingsKey) {
+        if let shortcut {
+            set(shortcut.keyCode, keyCodeKey)
+            set(shortcut.carbonModifiers, modifiersKey)
+        } else {
+            defaults.removeObject(forKey: keyCodeKey.rawValue)
+            defaults.removeObject(forKey: modifiersKey.rawValue)
         }
     }
 
@@ -183,6 +202,73 @@ public struct UAwakeSettings {
     public var updateChannel: UpdateChannel {
         get { defaults.string(forKey: SettingsKey.updateChannel.rawValue).flatMap(UpdateChannel.init) ?? .stable }
         nonmutating set { set(newValue.rawValue, .updateChannel) }
+    }
+
+    // MARK: Watermark
+
+    /// "Show watermark on screen" (Appearance). Off by default.
+    public var watermarkEnabled: Bool {
+        get { bool(.watermarkEnabled, default: false) }
+        nonmutating set { set(newValue, .watermarkEnabled) }
+    }
+
+    public var watermarkStyle: WatermarkStyle {
+        get { defaults.string(forKey: SettingsKey.watermarkStyle.rawValue).flatMap(WatermarkStyle.init) ?? .centred }
+        nonmutating set { set(newValue.rawValue, .watermarkStyle) }
+    }
+
+    /// A preset name (`blue`, `amber`, `green`, `red`, `white`) or `#RRGGBB`. Anything else reads as `blue`.
+    public var watermarkTextColour: String {
+        get { colour(.watermarkTextColour) }
+        nonmutating set { set(newValue, .watermarkTextColour) }
+    }
+
+    public var watermarkTimerColour: String {
+        get { colour(.watermarkTimerColour) }
+        nonmutating set { set(newValue, .watermarkTimerColour) }
+    }
+
+    /// 5–40 %.
+    public var watermarkOpacity: Int {
+        get { int(.watermarkOpacity, default: 12, in: 5...40) }
+        nonmutating set { set(newValue.clamped(to: 5...40), .watermarkOpacity) }
+    }
+
+    public var watermarkSize: WatermarkSize {
+        get { defaults.string(forKey: SettingsKey.watermarkSize.rawValue).flatMap(WatermarkSize.init) ?? .medium }
+        nonmutating set { set(newValue.rawValue, .watermarkSize) }
+    }
+
+    /// Hidden from screen sharing, screenshots and recordings. On by default.
+    public var watermarkHiddenFromCapture: Bool {
+        get { bool(.watermarkHiddenFromCapture, default: true) }
+        nonmutating set { set(newValue, .watermarkHiddenFromCapture) }
+    }
+
+    /// Hidden while presenting or when a full-screen app is in front. On by default.
+    public var watermarkHiddenInFullScreen: Bool {
+        get { bool(.watermarkHiddenInFullScreen, default: true) }
+        nonmutating set { set(newValue, .watermarkHiddenInFullScreen) }
+    }
+
+    /// The centred watermark moves a little every few minutes. On by default; Reduce Motion stops it.
+    public var watermarkDrifts: Bool {
+        get { bool(.watermarkDrifts, default: true) }
+        nonmutating set { set(newValue, .watermarkDrifts) }
+    }
+
+    /// The preset names a colour setting accepts besides `#RRGGBB`.
+    public static let watermarkColourPresets = ["blue", "amber", "green", "red", "white"]
+
+    /// `#RRGGBB` as 0xRRGGBB, or `nil` for anything else.
+    public static func hexColour(_ text: String) -> UInt32? {
+        guard text.count == 7, text.first == "#", let value = UInt32(text.dropFirst(), radix: 16) else { return nil }
+        return value
+    }
+
+    private func colour(_ key: SettingsKey) -> String {
+        let text = defaults.string(forKey: key.rawValue) ?? "blue"
+        return Self.watermarkColourPresets.contains(text) || Self.hexColour(text) != nil ? text : "blue"
     }
 
     // MARK: Presets
@@ -273,6 +359,27 @@ public enum SettingsKey: String, CaseIterable, Sendable {
     case rulesPausedUntil = "RulesPausedUntil"
     case preventSleepOnPower = "PreventSleepOnPower"
     case allowDisplaySleep = "AllowDisplaySleep"
+    case watermarkEnabled = "WatermarkEnabled"
+    case watermarkStyle = "WatermarkStyle"
+    case watermarkTextColour = "WatermarkTextColour"
+    case watermarkTimerColour = "WatermarkTimerColour"
+    case watermarkOpacity = "WatermarkOpacity"
+    case watermarkSize = "WatermarkSize"
+    case watermarkHiddenFromCapture = "WatermarkHiddenFromCapture"
+    case watermarkHiddenInFullScreen = "WatermarkHiddenInFullScreen"
+    case watermarkDrifts = "WatermarkDrifts"
+    case watermarkShortcutKeyCode = "WatermarkShortcutKeyCode"
+    case watermarkShortcutModifiers = "WatermarkShortcutModifiers"
+}
+
+/// The on-screen watermark's layout: one large label (with drift), text tiled diagonally,
+/// or a label bouncing around the screen.
+public enum WatermarkStyle: String, CaseIterable, Sendable {
+    case centred, tiled, bouncing
+}
+
+public enum WatermarkSize: String, CaseIterable, Sendable {
+    case small, medium, large
 }
 
 /// Menu bar icon family. The app maps each to an active and an inactive image: the uawake

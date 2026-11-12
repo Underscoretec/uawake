@@ -56,7 +56,7 @@ struct MainWindowView: View {
             case .rules: RulesSectionView(model: model.rules)
             case .durations: DurationsSettingsView(settings: model.settings)
             case .safety: SafetySettingsView()
-            case .appearance: AppearanceSettingsView()
+            case .appearance: AppearanceSettingsView(model: model)
             case .general: GeneralSettingsView(model: model)
             case .updates: UpdatesSettingsView(updates: model.updates)
             case .about: AboutView()

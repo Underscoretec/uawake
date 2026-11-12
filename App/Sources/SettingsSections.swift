@@ -203,26 +203,117 @@ struct SafetySettingsView: View {
 }
 
 struct AppearanceSettingsView: View {
+    let model: AppModel
     @AppStorage(SettingsKey.iconStyle.rawValue) private var iconStyle = IconStyle.uawake.rawValue
     @AppStorage(SettingsKey.showsCountdown.rawValue) private var showsCountdown = false
+    @AppStorage(SettingsKey.watermarkEnabled.rawValue) private var watermark = false
+    @AppStorage(SettingsKey.watermarkStyle.rawValue) private var style = WatermarkStyle.centred.rawValue
+    @AppStorage(SettingsKey.watermarkTextColour.rawValue) private var textColour = "blue"
+    @AppStorage(SettingsKey.watermarkTimerColour.rawValue) private var timerColour = "blue"
+    @AppStorage(SettingsKey.watermarkOpacity.rawValue) private var opacity = 12
+    @AppStorage(SettingsKey.watermarkSize.rawValue) private var size = WatermarkSize.medium.rawValue
+    @AppStorage(SettingsKey.watermarkHiddenFromCapture.rawValue) private var hiddenFromCapture = true
+    @AppStorage(SettingsKey.watermarkHiddenInFullScreen.rawValue) private var hiddenInFullScreen = true
+    @AppStorage(SettingsKey.watermarkDrifts.rawValue) private var drifts = true
+    @State private var shortcut: GlobalShortcut?
+    @State private var shortcutProblem: String?
 
     var body: some View {
         Form {
-            Picker("Menu bar icon", selection: $iconStyle) {
-                ForEach(IconStyle.allCases, id: \.self) { style in
-                    Label {
-                        Text(style.localizedName)
-                    } icon: {
-                        Image(nsImage: StatusItemController.symbolImage(style: style, active: true))
-                            .renderingMode(.template)
+            Section {
+                Picker("Menu bar icon", selection: $iconStyle) {
+                    ForEach(IconStyle.allCases, id: \.self) { style in
+                        Label {
+                            Text(style.localizedName)
+                        } icon: {
+                            Image(nsImage: StatusItemController.symbolImage(style: style, active: true))
+                                .renderingMode(.template)
+                        }
+                        .tag(style.rawValue)
                     }
-                    .tag(style.rawValue)
                 }
+                .pickerStyle(.radioGroup)
+                Toggle("Show remaining time in the menu bar", isOn: $showsCountdown)
             }
-            .pickerStyle(.radioGroup)
-            Toggle("Show remaining time in the menu bar", isOn: $showsCountdown)
+            Section {
+                Toggle("Show watermark on screen", isOn: $watermark)
+                Group {
+                    Picker("Style", selection: $style) {
+                        Text("Centred").tag(WatermarkStyle.centred.rawValue)
+                        Text("Tiled").tag(WatermarkStyle.tiled.rawValue)
+                        Text("Bouncing").tag(WatermarkStyle.bouncing.rawValue)
+                    }
+                    .pickerStyle(.segmented)
+                    WatermarkColourPicker(title: "Text colour", value: $textColour)
+                    WatermarkColourPicker(title: "Timer colour", value: $timerColour)
+                    LabeledContent("Opacity: \(opacity)%") {
+                        Slider(
+                            value: Binding(get: { Double(opacity) }, set: { opacity = Int($0.rounded()) }), in: 5...40,
+                            step: 1)
+                    }
+                    Picker("Size", selection: $size) {
+                        Text("Small").tag(WatermarkSize.small.rawValue)
+                        Text("Medium").tag(WatermarkSize.medium.rawValue)
+                        Text("Large").tag(WatermarkSize.large.rawValue)
+                    }
+                    Toggle("Hide from screen sharing, screenshots and recordings", isOn: $hiddenFromCapture)
+                    Toggle("Hide while presenting or when a full-screen app is in front", isOn: $hiddenInFullScreen)
+                    Toggle("Drift slowly (centred style)", isOn: $drifts)
+                        .disabled(style != WatermarkStyle.centred.rawValue)
+                }
+                .disabled(!watermark)
+                LabeledContent("Shortcut to show or hide the watermark") {
+                    VStack(alignment: .trailing) {
+                        ShortcutRecorder(shortcut: $shortcut)
+                        if let shortcutProblem {
+                            Text(shortcutProblem).font(.caption).foregroundStyle(.red)
+                        }
+                    }
+                }
+                .onChange(of: shortcut) { _, new in shortcutProblem = model.setWatermarkShortcut(new) }
+            } header: {
+                Text("Watermark")
+            } footer: {
+                Text(
+                    "Shows that your Mac is being kept awake, on every display, while a session is active. Clicks pass through it. Reduce Motion turns drift and bouncing off."
+                )
+            }
         }
         .formStyle(.grouped)
+        .onAppear { shortcut = model.settings.watermarkShortcut }
+    }
+}
+
+/// A watermark colour: a preset, or Custom with a colour well. Stored as a preset name or `#RRGGBB`.
+private struct WatermarkColourPicker: View {
+    let title: LocalizedStringKey
+    @Binding var value: String
+
+    var body: some View {
+        HStack {
+            Picker(
+                title,
+                selection: Binding(
+                    get: { value.hasPrefix("#") ? "custom" : value },
+                    set: {
+                        value = $0 == "custom" ? WatermarkController.hexText(WatermarkController.colour(value)) : $0
+                    })
+            ) {
+                ForEach(WatermarkController.colourPresets, id: \.value) { preset in
+                    Text(preset.name).tag(preset.value)
+                }
+                Text("Custom").tag("custom")
+            }
+            if value.hasPrefix("#") {
+                ColorPicker(
+                    title,
+                    selection: Binding(
+                        get: { WatermarkController.colour(value) }, set: { value = WatermarkController.hexText($0) }),
+                    supportsOpacity: false
+                )
+                .labelsHidden()
+            }
+        }
     }
 }
 

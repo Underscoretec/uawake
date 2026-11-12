@@ -29,6 +29,8 @@ maximum duration.
 - Keep the Mac awake indefinitely, for a preset or custom duration, or until a time of day.
 - Several sessions at once, each with a reason you can see in `pmset -g assertions`.
 - Optional display-awake mode, countdown in the menu bar, and a global shortcut.
+- An optional on-screen watermark while the Mac is kept awake: centred, tiled or bouncing,
+  hidden from screen sharing and screenshots, with its own shortcut.
 - Safety guards: battery limit, Low Power Mode, thermal pressure and a maximum duration, all on
   by default. Guards win over rules too.
 - Notifications before a session ends (with Extend and Stop) and when a guard stops one.

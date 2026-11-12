@@ -20,7 +20,7 @@
       "comment": "Condition summary"
     },
     "%@ left": {
-      "comment": "Popover: time remaining"
+      "comment": "On-screen watermark: time left, e.g. 1:42 left"
     },
     "%@ · ends in %@": {
       "comment": "Rule session row while lingering"
@@ -49,6 +49,9 @@
     "A safety guard is stopping sessions": {
       "comment": "Status chip, VoiceOver"
     },
+    "AWAKE · uawake": {
+      "comment": "On-screen watermark; uawake is the app's name"
+    },
     "About": {
       "comment": "Main window section"
     },
@@ -67,6 +70,9 @@
     "Allow %@ access": {},
     "Allow the display to sleep during sessions": {},
     "Also true while dictation or a recording uses the microphone.": {},
+    "Amber": {
+      "comment": "Watermark colour"
+    },
     "Another app is in front": {
       "comment": "Test view"
     },
@@ -114,6 +120,7 @@
       "comment": "Menu bar icon style"
     },
     "Both": {},
+    "Bouncing": {},
     "Building": {
       "comment": "Rule template name"
     },
@@ -138,6 +145,7 @@
       "comment": "Banner title: start refused"
     },
     "Cancel": {},
+    "Centred": {},
     "Change duration": {},
     "Change to": {
       "comment": "Preset header while a manual session runs"
@@ -176,6 +184,7 @@
     "Cup": {
       "comment": "Menu bar icon style"
     },
+    "Custom": {},
     "Cut": {
       "comment": "Menu item"
     },
@@ -200,6 +209,7 @@
     "Downloading above %@ for %@": {
       "comment": "Condition summary"
     },
+    "Drift slowly (centred style)": {},
     "Durations": {
       "comment": "Main window section"
     },
@@ -252,6 +262,9 @@
       "comment": "Rule editor: why Save is off"
     },
     "Grant Access": {},
+    "Green": {
+      "comment": "Watermark colour"
+    },
     "Guard active": {
       "comment": "Status chip"
     },
@@ -264,6 +277,8 @@
     "Guards on; one is near its limit": {
       "comment": "Status chip, VoiceOver"
     },
+    "Hide from screen sharing, screenshots and recordings": {},
+    "Hide while presenting or when a full-screen app is in front": {},
     "How uawake keeps itself up to date.": {
       "comment": "Main window section subtitle"
     },
@@ -309,6 +324,7 @@
     "Keynote or PowerPoint is in front": {
       "comment": "Rule template description"
     },
+    "Large": {},
     "Last checked": {},
     "Limit sessions without an end time": {},
     "Location": {
@@ -340,6 +356,7 @@
     "Measuring…": {
       "comment": "Test view: window not full"
     },
+    "Medium": {},
     "Menu bar icon": {},
     "Met": {
       "comment": "Test view: condition state"
@@ -432,6 +449,7 @@
     },
     "On the power adapter, prevent all sleep": {},
     "Only during certain hours": {},
+    "Opacity: %lld%%": {},
     "Open Rules": {},
     "Open Safety Settings": {},
     "Open System Settings": {},
@@ -483,6 +501,9 @@
     "Record Shortcut": {},
     "Record a shortcut": {},
     "Recording. Type a shortcut, or press Escape to cancel.": {},
+    "Red": {
+      "comment": "Watermark colour"
+    },
     "Redo": {
       "comment": "Menu item"
     },
@@ -551,8 +572,13 @@
       "comment": "Session source"
     },
     "Shortcut %@. Press to change.": {},
+    "Shortcut to show or hide the watermark": {},
     "Shortcut to turn uawake on or off": {},
     "Show remaining time in the menu bar": {},
+    "Show watermark on screen": {},
+    "Shows that your Mac is being kept awake, on every display, while a session is active. Clicks pass through it. Reduce Motion turns drift and bouncing off.": {},
+    "Size": {},
+    "Small": {},
     "Stable": {},
     "Start": {},
     "Started by a rule at %@": {
@@ -592,7 +618,9 @@
     "Stopped by you": {
       "comment": "Rule status"
     },
+    "Style": {},
     "Test": {},
+    "Text colour": {},
     "That preset already exists.": {
       "comment": "Durations settings error"
     },
@@ -646,6 +674,8 @@
     "This rule would not be matching now": {
       "comment": "Test view: overall"
     },
+    "Tiled": {},
+    "Timer colour": {},
     "Title contains (optional)": {},
     "True now": {
       "comment": "Test view"
@@ -710,6 +740,7 @@
     },
     "Warn %lld min before a session ends": {},
     "Warn before a session ends: off": {},
+    "Watermark": {},
     "Weekdays": {
       "comment": "Schedule days"
     },
@@ -727,6 +758,9 @@
     },
     "While your Mac is on the power adapter, sessions also stop it sleeping on its own, like caffeinate -s. On battery, they go back to normal. Closing the lid still sleeps your Mac unless an external display is connected.": {
       "comment": "Settings and rule editor: help for “On the power adapter, prevent all sleep”"
+    },
+    "White": {
+      "comment": "Watermark colour"
     },
     "Xcode is open, or the processor is busy": {
       "comment": "Rule template description"
@@ -760,6 +794,9 @@
     },
     "uawake": {
       "comment": "Main window title"
+    },
+    "uawake blue": {
+      "comment": "Watermark colour"
     },
     "uawake keeps your Mac awake when you need it: downloads, presentations, calls and long tasks. It stops by itself at low battery, in Low Power Mode or when your Mac gets too warm.": {},
     "uawake needs Bluetooth access to see which of your devices are connected.": {

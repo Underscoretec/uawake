@@ -55,6 +55,9 @@ struct SettingsTests {
                 "MaximumCapEnabled", "MaximumCapHours", "DurationPresets", "PrimaryClickAction", "EndWarningMinutes",
                 "ShowsCountdown", "UpdateChannel", "IconStyle", "GlobalShortcutKeyCode", "GlobalShortcutModifiers",
                 "FirstRunCompleted", "RulesPaused", "RulesPausedUntil", "PreventSleepOnPower", "AllowDisplaySleep",
+                "WatermarkEnabled", "WatermarkStyle", "WatermarkTextColour", "WatermarkTimerColour", "WatermarkOpacity",
+                "WatermarkSize", "WatermarkHiddenFromCapture", "WatermarkHiddenInFullScreen", "WatermarkDrifts",
+                "WatermarkShortcutKeyCode", "WatermarkShortcutModifiers",
             ])
     }
 
@@ -183,5 +186,50 @@ struct SettingsTests {
         #expect(DurationText.format(.zero) == "0s")
         #expect(EndCondition(presetText: "indefinite") == .indefinite)
         #expect(EndCondition.until(ClockTime(hour: 1, minute: 2)!).presetText == nil)
+    }
+}
+
+@MainActor
+struct WatermarkSettingsTests {
+    let suite = "uawake-tests-\(UUID().uuidString)"
+
+    @Test func defaultsAndClamping() throws {
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        let settings = UAwakeSettings(defaults: defaults)
+        #expect(!settings.watermarkEnabled)
+        #expect(settings.watermarkStyle == .centred)
+        #expect(settings.watermarkOpacity == 12)
+        #expect(settings.watermarkSize == .medium)
+        #expect(settings.watermarkHiddenFromCapture && settings.watermarkHiddenInFullScreen && settings.watermarkDrifts)
+        defaults.set(90, forKey: "WatermarkOpacity")
+        #expect(settings.watermarkOpacity == 40)
+        defaults.set("huge", forKey: "WatermarkSize")
+        #expect(settings.watermarkSize == .medium)
+    }
+
+    @Test func colours() throws {
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        let settings = UAwakeSettings(defaults: defaults)
+        #expect(settings.watermarkTextColour == "blue")
+        settings.watermarkTextColour = "amber"
+        #expect(settings.watermarkTextColour == "amber")
+        settings.watermarkTimerColour = "#FF8000"
+        #expect(settings.watermarkTimerColour == "#FF8000")
+        #expect(UAwakeSettings.hexColour("#FF8000") == 0xFF8000)
+        for bad in ["purple", "#12345", "#GGGGGG", "FF8000"] {
+            settings.watermarkTextColour = bad
+            #expect(settings.watermarkTextColour == "blue")
+        }
+    }
+
+    @Test func shortcutIsSeparateFromTheOnOffShortcut() throws {
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        let settings = UAwakeSettings(defaults: defaults)
+        #expect(settings.watermarkShortcut == nil)
+        settings.watermarkShortcut = GlobalShortcut(keyCode: 13, carbonModifiers: 2304)
+        #expect(settings.watermarkShortcut == GlobalShortcut(keyCode: 13, carbonModifiers: 2304))
+        #expect(settings.globalShortcut == nil)
+        settings.watermarkShortcut = nil
+        #expect(defaults.object(forKey: "WatermarkShortcutKeyCode") == nil)
     }
 }

@@ -17,6 +17,59 @@ final class ScreenshotTests: XCTestCase {
     @MainActor func testLight() throws { try capture("light") }
     @MainActor func testDark() throws { try capture("dark") }
 
+    /// The on-screen watermark, centred and tiled, over a light and a dark backdrop. Capture
+    /// hiding is off here, or the screenshot would show only the backdrop.
+    @MainActor func testWatermark() throws {
+        for mode in ["light", "dark"] {
+            for style in ["centred", "tiled"] {
+                launch([
+                    "-UITesting", "-UITestWatermark", "-UITestBackdrop", mode,
+                    "-UITestOpenURL", "uawake://activate?duration=102m",
+                    "-WatermarkEnabled", "<true/>", "-WatermarkHiddenFromCapture", "<false/>",
+                    "-WatermarkDrifts", "<false/>", "-WatermarkStyle", style,
+                ])
+                let backdrop = app.windows["Backdrop"]
+                XCTAssertTrue(backdrop.waitForExistence(timeout: 10))
+                shoot(backdrop, "watermark-\(style)-\(mode)")
+                app.terminate()
+            }
+        }
+        // Bouncing: the label moves between two screenshots.
+        launch([
+            "-UITesting", "-UITestWatermark", "-UITestBackdrop", "dark", "-UITestOpenURL",
+            "uawake://activate?duration=102m", "-WatermarkEnabled", "<true/>", "-WatermarkHiddenFromCapture",
+            "<false/>", "-WatermarkStyle", "bouncing",
+        ])
+        let bouncing = app.windows["Backdrop"]
+        XCTAssertTrue(bouncing.waitForExistence(timeout: 10))
+        sleep(1)
+        let first = bouncing.screenshot().pngRepresentation
+        sleep(2)
+        XCTAssertNotEqual(first, bouncing.screenshot().pngRepresentation, "The bouncing watermark didn't move")
+        app.terminate()
+
+        // With capture hiding on (the default), a real screenshot shows only the backdrop.
+        launch([
+            "-UITesting", "-UITestWatermark", "-UITestBackdrop", "dark", "-UITestOpenURL",
+            "uawake://activate?duration=102m", "-WatermarkEnabled", "<true/>", "-WatermarkOpacity", "40",
+            "-WatermarkTextColour", "white", "-WatermarkStyle", "tiled",
+        ])
+        let backdrop = app.windows["Backdrop"]
+        XCTAssertTrue(backdrop.waitForExistence(timeout: 10))
+        sleep(1)
+        let image = backdrop.screenshot().image
+        let bitmap = try XCTUnwrap(
+            image.cgImage(forProposedRect: nil, context: nil, hints: nil).map(NSBitmapImageRep.init))
+        let reference = bitmap.colorAt(x: 4, y: bitmap.pixelsHigh / 2)
+        var differing = 0
+        for x in stride(from: 0, to: bitmap.pixelsWide, by: 7) {
+            for y in stride(from: 0, to: bitmap.pixelsHigh, by: 7) where bitmap.colorAt(x: x, y: y) != reference {
+                differing += 1
+            }
+        }
+        XCTAssertEqual(differing, 0, "The watermark showed up in a screenshot")
+    }
+
     @MainActor
     private func capture(_ mode: String) throws {
         let base = ["-UITesting", "-UITestAppearance", mode, "-UITestBackdrop", mode, "-UITestDeviceState", "battery"]

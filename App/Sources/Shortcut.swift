@@ -3,29 +3,37 @@ import Carbon.HIToolbox
 import SwiftUI
 import UAwakeCore
 
-/// Registers the global shortcut with Carbon `RegisterEventHotKey`, which needs no
-/// Accessibility permission (confirmed by the sandbox spike).
+/// Registers a global shortcut with Carbon `RegisterEventHotKey`, which needs no
+/// Accessibility permission (confirmed by the sandbox spike). One controller per shortcut.
 @MainActor
 final class HotKeyController {
     var onPress: () -> Void = {}
+    private let id: UInt32
     private var reference: EventHotKeyRef?
-    private static weak var current: HotKeyController?
+    private static var controllers: [UInt32: HotKeyController] = [:]
 
-    init() {
-        var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
-        InstallEventHandler(
-            GetApplicationEventTarget(),
-            { _, _, _ in
-                MainActor.assumeIsolated { HotKeyController.current?.onPress() }
-                return noErr
-            }, 1, &spec, nil, nil)
-        Self.current = self
+    init(id: UInt32) {
+        self.id = id
+        if Self.controllers.isEmpty {
+            var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+            InstallEventHandler(
+                GetApplicationEventTarget(),
+                { _, event, _ in
+                    var hotKeyID = EventHotKeyID()
+                    GetEventParameter(
+                        event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil,
+                        MemoryLayout<EventHotKeyID>.size, nil, &hotKeyID)
+                    MainActor.assumeIsolated { HotKeyController.controllers[hotKeyID.id]?.onPress() }
+                    return noErr
+                }, 1, &spec, nil, nil)
+        }
+        Self.controllers[id] = self
     }
 
     func register(_ shortcut: GlobalShortcut) -> OSStatus {
         var reference: EventHotKeyRef?
         let status = RegisterEventHotKey(
-            UInt32(shortcut.keyCode), UInt32(shortcut.carbonModifiers), EventHotKeyID(signature: 0x7561_776B, id: 1),
+            UInt32(shortcut.keyCode), UInt32(shortcut.carbonModifiers), EventHotKeyID(signature: 0x7561_776B, id: id),
             GetApplicationEventTarget(), 0, &reference)
         self.reference = reference
         return status
@@ -43,6 +51,12 @@ extension AppModel {
         settings.globalShortcut = shortcut
         registerShortcut()
         return shortcutProblem
+    }
+
+    func setWatermarkShortcut(_ shortcut: GlobalShortcut?) -> String? {
+        settings.watermarkShortcut = shortcut
+        registerShortcut()
+        return watermarkShortcutProblem
     }
 }
 

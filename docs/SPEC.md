@@ -135,7 +135,7 @@ Invalid URLs change nothing and log a warning; they never leave the UI out of sy
 
 ### Settings window
 
-Tabs: General (launch at login, primary click action, shortcut, allow the display to sleep during sessions, on the power adapter prevent all sleep), Durations, Safety, Appearance (icon style, countdown text), Updates (Sparkle channel: stable or beta), About (version, credits, licence).
+Tabs: General (launch at login, primary click action, shortcut, allow the display to sleep during sessions, on the power adapter prevent all sleep), Durations, Safety, Appearance (icon style, countdown text, on-screen watermark), Updates (Sparkle channel: stable or beta), About (version, credits, licence).
 
 ### First run
 
@@ -201,6 +201,17 @@ Permissions are requested only when a user adds a rule that needs them. Without 
 
 - Active sessions show their source, so users see "Rule: On a call" separately from manual sessions.
 - A Rules section with the pause control and matching rules.
+
+### On-screen watermark
+
+Appearance › "Show watermark on screen", off by default (keys in `docs/SETTINGS.md`).
+
+- A borderless, transparent, click-through window per display, covering the whole display: on all Spaces, above normal and floating windows, below alerts and modal panels. Shown only while a session is active; displays that connect or disconnect gain or lose theirs.
+- The time is the large part: "1:42 left" for timed sessions or "since 9:50" for open-ended ones, with a small "AWAKE · uawake" above it. Styles: Centred, Tiled (repeated diagonally across the screen) and Bouncing (the label glides around the screen and bounces off its edges; Core Animation moves it, so it costs no more CPU than the others).
+- Text and timer colours (uawake blue, amber, green, red, white, or custom), opacity 5–40% (12% default), size small, medium or large, and a global shortcut that shows or hides it.
+- On by default: hidden from screen sharing, screenshots and recordings (`sharingType = .none`); hidden while presenting or when a full-screen app is in front (a frontmost-app window filling the display, checked every 2 s and on app and Space changes); the centred style drifts every 3 minutes.
+- The timer updates like the menu bar pill: once a minute, every second in the final minute.
+- Accessibility: Reduce Motion stops drift and bouncing (the bouncing label stays centred); Increase Contrast raises opacity and outlines the text; VoiceOver ignores the overlay.
 
 ### Performance budget
 

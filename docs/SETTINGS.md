@@ -23,6 +23,17 @@ immediately.
 | `AllowDisplaySleep` | Boolean | `false` | | "Allow the display to sleep during sessions" (General, 1.0). Off: manual and URL sessions also hold `PreventUserIdleDisplaySleep`. A URL's `display=` overrides it; rules choose per rule |
 | `PreventSleepOnPower` | Boolean | `false` | | "On the power adapter, prevent all sleep" (General, 1.0). On AC power, non-rule sessions also hold `PreventSystemSleep` (`uawake: <reason> (on power)`), like `caffeinate -s`; dropped on battery. Rules have their own per-rule option. Closing the lid still sleeps the Mac without an external display |
 | `ShowsCountdown` | Boolean | `false` | | Remaining time beside the menu bar icon |
+| `WatermarkEnabled` | Boolean | `false` | | "Show watermark on screen" (Appearance, 1.0): a click-through overlay on every display while a session is active |
+| `WatermarkStyle` | String | `centred` | `centred`, `tiled`, `bouncing` | Large label in the middle, text tiled diagonally, or a label bouncing around the screen |
+| `WatermarkTextColour` | String | `blue` | `blue`, `amber`, `green`, `red`, `white`, or `#RRGGBB` | Colour of "AWAKE · uawake" |
+| `WatermarkTimerColour` | String | `blue` | As `WatermarkTextColour` | Colour of "1:42 left" or "since 9:50" |
+| `WatermarkOpacity` | Integer | `12` | 5–40 (%) | Watermark opacity |
+| `WatermarkSize` | String | `medium` | `small`, `medium`, `large` | Watermark text size |
+| `WatermarkHiddenFromCapture` | Boolean | `true` | | Hide the watermark from screen sharing, screenshots and recordings |
+| `WatermarkHiddenInFullScreen` | Boolean | `true` | | Hide it while presenting or when a full-screen app is in front |
+| `WatermarkDrifts` | Boolean | `true` | | The centred style moves a little every few minutes (never with Reduce Motion) |
+| `WatermarkShortcutKeyCode` | Integer | none | As `GlobalShortcutKeyCode` | Global shortcut that shows or hides the watermark (toggles `WatermarkEnabled`) |
+| `WatermarkShortcutModifiers` | Integer | none | As `GlobalShortcutModifiers` | Its modifiers |
 | `UpdateChannel` | String | `stable` | `stable`, `beta` | Sparkle update feed (used once Sparkle is set up) |
 | `IconStyle` | String | `uawake` | `uawake`, `cup`, `eye`, `bolt` | Menu bar icon family |
 | `GlobalShortcutKeyCode` | Integer | none | macOS virtual key code | Global shortcut key; no shortcut unless both shortcut keys are set |

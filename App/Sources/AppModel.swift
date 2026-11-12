@@ -15,11 +15,13 @@ final class AppModel {
     let settings: UAwakeSettings
     let popover: PopoverViewModel
     let notifications: NotificationController
-    let hotKey = HotKeyController()
+    let hotKey = HotKeyController(id: 1)
+    let watermarkHotKey = HotKeyController(id: 2)
     let updates: UpdatesModel
     let rules: RulesModel
     /// Why the current shortcut could not be registered, or `nil`.
     private(set) var shortcutProblem: String?
+    private(set) var watermarkShortcutProblem: String?
 
     /// `settingsSuite` keeps settings in a throwaway domain (cleared at launch), so UI tests
     /// and acceptance runs never touch real settings. `fixedDeviceState` replaces the real
@@ -116,6 +118,7 @@ final class AppModel {
             }
         }
         hotKey.onPress = { [weak self] in self?.popover.toggle() }
+        watermarkHotKey.onPress = { settings.watermarkEnabled.toggle() }
         registerShortcut()
     }
 
@@ -132,17 +135,27 @@ final class AppModel {
     }
 
     private var registeredShortcut: GlobalShortcut?
+    private var registeredWatermarkShortcut: GlobalShortcut?
 
     func registerShortcut() {
-        let shortcut = settings.globalShortcut
-        guard shortcut != registeredShortcut else { return }
-        registeredShortcut = shortcut
+        register(settings.globalShortcut, on: hotKey, registered: &registeredShortcut, problem: &shortcutProblem)
+        register(
+            settings.watermarkShortcut, on: watermarkHotKey, registered: &registeredWatermarkShortcut,
+            problem: &watermarkShortcutProblem)
+    }
+
+    private func register(
+        _ shortcut: GlobalShortcut?, on hotKey: HotKeyController, registered: inout GlobalShortcut?,
+        problem: inout String?
+    ) {
+        guard shortcut != registered else { return }
+        registered = shortcut
         hotKey.unregister()
-        shortcutProblem = nil
+        problem = nil
         guard let shortcut else { return }
         let status = hotKey.register(shortcut)
         if status != noErr {
-            shortcutProblem = String(
+            problem = String(
                 localized: "That shortcut is already in use. Choose another.",
                 comment: "Settings: global shortcut could not be registered")
             Self.logger.warning("Shortcut registration failed: \(status)")
