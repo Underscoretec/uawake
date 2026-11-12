@@ -8,10 +8,14 @@ import os
 public enum URLRouter {
     private static let logger = Logger(subsystem: "com.underscoretec.uawake", category: "ipc")
 
-    /// - Parameter defaultCondition: the primary-click preset, used by `uawake://toggle`.
+    /// - Parameters:
+    ///   - defaultCondition: the primary-click preset, used by `uawake://toggle`.
+    ///   - defaultModes: ``UAwakeSettings/sessionModes``, used unless the URL sets `display=`.
     /// - Returns: `false` if the URL was rejected or the engine refused it.
     @discardableResult
-    public static func route(_ url: URL, to engine: any SessionEngine, defaultCondition: EndCondition) -> Bool {
+    public static func route(
+        _ url: URL, to engine: any SessionEngine, defaultCondition: EndCondition, defaultModes: Set<AwakeMode>
+    ) -> Bool {
         let command: URLCommand
         do {
             command = try URLCommand(url: url)
@@ -24,14 +28,15 @@ public enum URLRouter {
         do throws(SessionEngineError) {
             switch command {
             case .activate(let options):
-                try engine.start(options.request)
+                try engine.start(options.request(defaultModes: defaultModes))
             case .deactivate:
                 engine.stopAll(source: .manual, cause: .stoppedByUser)
                 engine.stopAll(source: .url, cause: .stoppedByUser)
             case .toggle:
                 try engine.toggle(
                     SessionRequest(
-                        source: .url, reason: .standard(.url, defaultCondition), endCondition: defaultCondition))
+                        source: .url, reason: .standard(.url, defaultCondition), modes: defaultModes,
+                        endCondition: defaultCondition))
             }
             return true
         } catch {
@@ -44,12 +49,12 @@ public enum URLRouter {
 }
 
 extension ActivateOptions {
-    /// The URL session this asks for.
-    public var request: SessionRequest {
+    /// The URL session this asks for; without `display=` it uses `defaultModes`.
+    public func request(defaultModes: Set<AwakeMode>) -> SessionRequest {
         SessionRequest(
             source: .url,
             reason: reason.map(SessionReason.custom) ?? .standard(.url, endCondition),
-            modes: keepsDisplayAwake ? [.system, .display] : [.system],
+            modes: keepsDisplayAwake.map { $0 ? [.system, .display] : [.system] } ?? defaultModes,
             endCondition: endCondition
         )
     }

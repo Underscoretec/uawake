@@ -24,6 +24,9 @@ public final class DefaultSessionEngine: SessionEngine {
         didSet { if preventsSleepOnPower != oldValue { syncOnPower() } }
     }
 
+    /// True while any session holds its on-power `PreventSystemSleep` assertion.
+    public private(set) var isPreventingAllSleep = false
+
     /// The last state passed to ``apply(_:)``; `nil` until the first one.
     public private(set) var deviceState: DeviceState?
 
@@ -128,6 +131,7 @@ public final class DefaultSessionEngine: SessionEngine {
         if let handle = handles.removeValue(forKey: id) { assertions.release(handle) }
         sessions[index].state = .paused(remaining: remaining)
         sessions[index].deadline = nil
+        sessions[index].pausedAt = clock.now
         syncOnPower()
         logger.info("Paused \(session.reason.englishDescription, privacy: .public)")
         emit(.paused(sessions[index]))
@@ -140,6 +144,8 @@ public final class DefaultSessionEngine: SessionEngine {
         let session = sessions[index]
         handles[id] = try assertions.acquire(modes: session.modes, reason: session.reason.englishDescription)
         sessions[index].state = .active
+        sessions[index].pausedDuration += sessions[index].pausedAt.map { clock.now.timeIntervalSince($0) } ?? 0
+        sessions[index].pausedAt = nil
         sessions[index].deadline = remaining.map { clock.now + $0.timeInterval } ?? capDeadline(for: session)
         syncOnPower()
         logger.info("Resumed \(session.reason.englishDescription, privacy: .public)")
@@ -210,6 +216,7 @@ public final class DefaultSessionEngine: SessionEngine {
                 logger.warning("On-power assertion failed: \(String(describing: error), privacy: .public)")
             }
         }
+        if isPreventingAllSleep != !onPowerHandles.isEmpty { isPreventingAllSleep = !onPowerHandles.isEmpty }
     }
 
     // MARK: Guards

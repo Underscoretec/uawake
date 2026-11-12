@@ -20,6 +20,7 @@ immediately.
 | `DurationPresets` | Array of strings | `15m`, `30m`, `1h`, `2h`, `5h`, `indefinite` | Up to 12 unique entries | Popover preset chips, in order |
 | `PrimaryClickAction` | String | `indefinite` | A preset value | Session started by the primary click and `uawake://toggle` |
 | `EndWarningMinutes` | Integer | `5` | 0–60; 0 = off | Warning before a timed session ends |
+| `AllowDisplaySleep` | Boolean | `false` | | "Allow the display to sleep during sessions" (General, 1.0). Off: manual and URL sessions also hold `PreventUserIdleDisplaySleep`. A URL's `display=` overrides it; rules choose per rule |
 | `PreventSleepOnPower` | Boolean | `false` | | "On the power adapter, prevent all sleep" (General, 1.0). On AC power, non-rule sessions also hold `PreventSystemSleep` (`uawake: <reason> (on power)`), like `caffeinate -s`; dropped on battery. Rules have their own per-rule option. Closing the lid still sleeps the Mac without an external display |
 | `ShowsCountdown` | Boolean | `false` | | Remaining time beside the menu bar icon |
 | `UpdateChannel` | String | `stable` | `stable`, `beta` | Sparkle update feed (used once Sparkle is set up) |

@@ -14,6 +14,7 @@ struct GeneralSettingsView: View {
     @State private var shortcutProblem: String?
     @AppStorage(SettingsKey.primaryClickAction.rawValue) private var primaryClickAction = "indefinite"
     @AppStorage(SettingsKey.preventSleepOnPower.rawValue) private var preventSleepOnPower = false
+    @AppStorage(SettingsKey.allowDisplaySleep.rawValue) private var allowDisplaySleep = false
 
     var body: some View {
         Form {
@@ -35,6 +36,11 @@ struct GeneralSettingsView: View {
                 }
             }
             .onChange(of: shortcut) { _, new in shortcutProblem = model.setShortcut(new) }
+            Section {
+                Toggle("Allow the display to sleep during sessions", isOn: $allowDisplaySleep)
+            } footer: {
+                Text("Sessions you start keep the screen on unless this is on. Rules choose for themselves.")
+            }
             Section {
                 Toggle("On the power adapter, prevent all sleep", isOn: $preventSleepOnPower)
             } footer: {

@@ -10,6 +10,7 @@ import UAwakeCore
 /// | `uawake://activate?duration=1h30m` | `.duration(.seconds(5400))`; `h`/`m`/`s` parts, descending, each at most once |
 /// | `uawake://activate?until=18:30` | `.until(ClockTime(18, 30))`, 24-hour `HH:mm` |
 /// | `uawake://activate?display=1&reason=Render` | display mode on, custom reason |
+/// | `uawake://activate?display=0` | system only, whatever the display setting |
 /// | `uawake://deactivate` | `.deactivate` — ends all manual and URL sessions |
 /// | `uawake://toggle` | `.toggle` — ``SessionEngine/toggle(_:)`` with the default session |
 public enum URLCommand: Equatable, Sendable {
@@ -96,13 +97,14 @@ public enum URLCommand: Equatable, Sendable {
 public struct ActivateOptions: Equatable, Sendable {
     /// `.indefinite`, `.duration` or `.until` only.
     public var endCondition: EndCondition = .indefinite
-    /// `display=1` (or `true`) adds ``AwakeMode/display``.
-    public var keepsDisplayAwake = false
+    /// `display=1`/`true` adds ``AwakeMode/display``, `display=0`/`false` forces system only;
+    /// `nil` (no `display=`) follows the "Allow the display to sleep" setting.
+    public var keepsDisplayAwake: Bool?
     /// Caller-supplied reason (``SessionReason/custom(_:)``), 1–128 characters;
     /// `nil` means ``SessionReason/standard(_:_:)`` with source `.url`.
     public var reason: String?
 
-    public init(endCondition: EndCondition = .indefinite, keepsDisplayAwake: Bool = false, reason: String? = nil) {
+    public init(endCondition: EndCondition = .indefinite, keepsDisplayAwake: Bool? = nil, reason: String? = nil) {
         self.endCondition = endCondition
         self.keepsDisplayAwake = keepsDisplayAwake
         self.reason = reason

@@ -55,18 +55,20 @@ struct Hero: Equatable {
         case idle
         /// Every active session has its own end: a countdown to the last one.
         case timed
-        /// An indefinite or battery-level session runs.
+        /// An indefinite or battery-level session runs: shows how long it has kept the Mac awake.
         case indefinite
     }
 
     let kind: Kind
-    /// The countdown for `.timed`; `nil` otherwise.
+    /// The countdown for `.timed`; the awake time ("2:14") for `.indefinite`; `nil` when idle.
     let countdown: String?
-    /// "until 18:30" for `.timed`, "Indefinite" for `.indefinite`.
+    /// "until 18:30" for `.timed`, "since 9:50 AM · Indefinite" for `.indefinite`.
     let caption: String
     /// Elapsed fraction of the longest-running timed session, 0–1.
     let progress: Double?
     let isEndingSoon: Bool
+    /// Some active session keeps the display awake.
+    var keepsScreenOn = false
 }
 
 struct StatusChip: Identifiable, Equatable {
@@ -90,6 +92,7 @@ struct SessionRow: Identifiable, Equatable {
     let isPaused: Bool
     /// Extend is offered only for sessions with a deadline.
     let canExtend: Bool
+    let startedAt: Date
 
     init(_ session: Session) {
         id = session.id
@@ -100,6 +103,7 @@ struct SessionRow: Identifiable, Equatable {
         isPaused = session.state != .active
         canExtend = session.endCondition.hasOwnDeadline
         deadline = canExtend ? session.deadline : nil
+        startedAt = session.startedAt
     }
 }
 
@@ -251,8 +255,28 @@ final class PopoverViewModel {
         return remaining - (minutes - 1) * 60
     }
 
+    /// A row's trailing text: the countdown for timed sessions, "since 9:50" for indefinite
+    /// and rule sessions, "until 20% battery · since 9:50" for battery-level ones.
     func remaining(_ row: SessionRow, now: Date) -> String? {
-        row.deadline.map { Self.countdownText($0.timeIntervalSince(now)) }
+        if let deadline = row.deadline { return Self.countdownText(deadline.timeIntervalSince(now)) }
+        let since = Self.sinceText(row.startedAt)
+        guard case .batteryLevel(let level) = row.endCondition else { return since }
+        let percent = (Double(level) / 100).formatted(.percent)
+        return String(
+            localized: "until \(percent) battery · \(since)",
+            comment: "Battery-level session row: the battery percentage, then “since 9:50”")
+    }
+
+    /// "since 9:50 AM".
+    static func sinceText(_ start: Date) -> String {
+        let time = start.formatted(date: .omitted, time: .shortened)
+        return String(localized: "since \(time)", comment: "When a session started; the argument is a time of day")
+    }
+
+    /// Awake time as hours and minutes: `0:05`, `2:14`, `26:03`. Seconds round down.
+    static func elapsedText(_ elapsed: TimeInterval) -> String {
+        Duration.seconds(max(0, Int(elapsed)))
+            .formatted(.time(pattern: .hourMinute(padHourToLength: 1, roundSeconds: .down)))
     }
 
     /// `42:05` under an hour, `1:42:05` from an hour; seconds round up so it reads 0:00 only at the end.
@@ -278,14 +302,19 @@ final class PopoverViewModel {
         guard !active.isEmpty else {
             return Hero(kind: .idle, countdown: nil, caption: "", progress: nil, isEndingSoon: false)
         }
+        let keepsScreenOn = active.contains { $0.modes.contains(.display) }
         guard let countdown = countdown(now: now),
             let last = active.max(by: { ($0.deadline ?? .distantPast) < ($1.deadline ?? .distantPast) }),
             let deadline = last.deadline
         else {
+            // The longest-awake session without its own end.
+            let open = active.filter { !$0.endCondition.hasOwnDeadline }
+            let longest = open.max { $0.awakeTime(at: now) < $1.awakeTime(at: now) } ?? active[0]
+            let since = Self.sinceText(longest.startedAt)
             return Hero(
-                kind: .indefinite, countdown: nil,
-                caption: String(localized: "Indefinite", comment: "Preset chip: no end time"), progress: nil,
-                isEndingSoon: false)
+                kind: .indefinite, countdown: Self.elapsedText(longest.awakeTime(at: now)),
+                caption: "\(since) · \(longest.endCondition.chipTitle)", progress: nil, isEndingSoon: false,
+                keepsScreenOn: keepsScreenOn)
         }
         let total = deadline.timeIntervalSince(last.startedAt)
         let progress = total > 0 ? min(1, max(0, now.timeIntervalSince(last.startedAt) / total)) : 1
@@ -293,7 +322,7 @@ final class PopoverViewModel {
         return Hero(
             kind: .timed, countdown: countdown,
             caption: String(localized: "until \(time)", comment: "Session end; the argument is a time of day"),
-            progress: progress, isEndingSoon: isEndingSoon(deadline, now: now))
+            progress: progress, isEndingSoon: isEndingSoon(deadline, now: now), keepsScreenOn: keepsScreenOn)
     }
 
     /// Within the end-warning lead time (5 min when the warning is off).
@@ -443,6 +472,15 @@ final class PopoverViewModel {
         case .unknown:
             break
         }
+        if engine.isPreventingAllSleep {
+            chips.append(
+                StatusChip(
+                    id: "onPower", symbol: "powersleep",
+                    text: String(localized: "No sleep on power", comment: "Status chip"), tone: .neutral,
+                    accessibilityLabel: String(
+                        localized: "On the power adapter, all sleep is prevented",
+                        comment: "Status chip, VoiceOver")))
+        }
         chips.append(guardChip(state, policy: policy))
         return chips
     }
@@ -505,7 +543,9 @@ final class PopoverViewModel {
         let condition = settings.primaryClickAction
         perform { () throws(SessionEngineError) in
             try engine.toggle(
-                SessionRequest(source: .manual, reason: .standard(.manual, condition), endCondition: condition))
+                SessionRequest(
+                    source: .manual, reason: .standard(.manual, condition), modes: settings.sessionModes,
+                    endCondition: condition))
         }
     }
 
@@ -515,7 +555,9 @@ final class PopoverViewModel {
         perform { () throws(SessionEngineError) in
             let previous = engine.sessions.filter { $0.source == .manual }.map(\.id)
             try engine.start(
-                SessionRequest(source: .manual, reason: .standard(.manual, condition), endCondition: condition))
+                SessionRequest(
+                    source: .manual, reason: .standard(.manual, condition), modes: settings.sessionModes,
+                    endCondition: condition))
             for id in previous { engine.stop(id, cause: .stoppedByUser) }
         }
     }

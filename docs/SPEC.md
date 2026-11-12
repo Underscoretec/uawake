@@ -66,10 +66,11 @@ A session is the unit everything works with. Each session has:
 | --- | --- |
 | Source | manual, URL scheme (later: rule, CLI, Shortcuts, MDM) |
 | Reason | Human-readable text, e.g. "Manual: 2 hours" |
-| Mode | Keep system awake (always); keep display awake (optional); keep disk awake (optional) |
+| Mode | Keep system awake (always); keep display awake (manual and URL sessions by default, from 1.0); keep disk awake (optional) |
 | End condition | Duration, until a clock time, indefinite, until battery drains to X% (on battery power only) |
 | State | Active, paused, ended (with end cause) |
 
+- Manual and URL sessions keep the display awake too, unless "Allow the display to sleep during sessions" (General, off by default) is on. A URL's `display=1` or `display=0` overrides the setting. Rules choose per rule ("Keep the display on"); the Presenting and On a call templates turn it on, Building and Downloading leave it off.
 - Several sessions can run at once. The Mac stays awake while any session is active, using the combined modes of all active sessions.
 - Each session holds its own IOKit assertions, named `uawake: <reason>`, so they show up in `pmset -g assertions`. Assertion names stay in English; reasons are localised only in the app's UI.
 - **On the power adapter, prevent all sleep** (General, off by default, from 1.0): while the Mac is on AC power, each session also holds a `PreventSystemSleep` assertion, like `caffeinate -s`, named `uawake: <reason> (on power)`. When the Mac switches to battery that assertion is released and the normal ones stay; it returns on AC. Rules have the same option per rule instead. Closing the lid still sleeps the Mac unless an external display is connected (lid-closed awake stays a 2.0 Pro helper feature).
@@ -88,6 +89,9 @@ A session is the unit everything works with. Each session has:
 - Menu bar icon with clear active and inactive states, in light and dark appearance.
 - Optional remaining-time text beside the icon: `1:42` from an hour, `42m` under an hour, `m:ss` in the final minute. It is redrawn once a minute (each second only in the final minute).
 - Primary click toggles the default session; secondary click (or Option-click) opens the popover.
+- Popover hero: the countdown for timed sessions; for sessions without an end time, "Awake for 2:14" (hours and minutes awake, paused time excluded) with "since 9:50 AM · Indefinite" beneath. It also says "Screen stays on" or "Screen can sleep".
+- Session rows show the countdown for timed sessions, "since 9:50" for indefinite and rule sessions (a rule's session starts when the rule starts matching), and "until 20% battery · since 9:50" for battery-level sessions. The menu bar shows only the icon for sessions without an end time.
+- The status strip shows "No sleep on power" while any session holds its on-power assertion.
 - Popover contents: on/off control, remaining time, preset duration chips, "until" picker, extend buttons, list of active sessions with their reasons and a stop button each, links to Settings and Quit.
 - Global keyboard shortcut to toggle, set by the user (no Accessibility permission needed).
 
@@ -117,7 +121,8 @@ When a guard ends a session, the user gets a notification naming the guard.
 | `uawake://activate` | Start an indefinite session |
 | `uawake://activate?duration=90m` | Start a timed session; accepts s, m, h units |
 | `uawake://activate?until=18:30` | Session until a clock time |
-| `uawake://activate?display=1&reason=Render` | Optional display mode and reason |
+| `uawake://activate?display=1&reason=Render` | Optional display mode and reason; without `display=` the "Allow the display to sleep" setting decides |
+| `uawake://activate?display=0` | System only, even when the setting keeps the display on |
 | `uawake://deactivate` | End all manual and URL sessions |
 | `uawake://toggle` | Stop all manual and URL sessions if any are running, otherwise start the default session; rule and CLI sessions are unaffected |
 
@@ -130,7 +135,7 @@ Invalid URLs change nothing and log a warning; they never leave the UI out of sy
 
 ### Settings window
 
-Tabs: General (launch at login, primary click action, shortcut, on the power adapter prevent all sleep), Durations, Safety, Appearance (icon style, countdown text), Updates (Sparkle channel: stable or beta), About (version, credits, licence).
+Tabs: General (launch at login, primary click action, shortcut, allow the display to sleep during sessions, on the power adapter prevent all sleep), Durations, Safety, Appearance (icon style, countdown text), Updates (Sparkle channel: stable or beta), About (version, credits, licence).
 
 ### First run
 
@@ -187,6 +192,7 @@ Permissions are requested only when a user adds a rule that needs them. Without 
 
 - A Rules tab in Settings lists rules with on/off switches and a live indicator showing which rules are matching right now.
 - The editor builds a rule from condition rows, with app pickers, device pickers and threshold sliders, not free text.
+- Each rule has a "Keep the display on" toggle.
 - Each rule has the same "On the power adapter, prevent all sleep" option as General, off by default.
 - A "Test" view shows each condition's current value, e.g. CPU 34% against a 50% threshold.
 - Starter templates: Presenting (Keynote or PowerPoint frontmost), On a call, Building (Xcode or a CPU threshold), Downloading (network threshold), Plugged in at the office (power plus Wi-Fi).

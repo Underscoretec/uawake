@@ -65,6 +65,7 @@
     },
     "All-day, declined and free events are ignored.": {},
     "Allow %@ access": {},
+    "Allow the display to sleep during sessions": {},
     "Also true while dictation or a recording uses the microphone.": {},
     "Another app is in front": {
       "comment": "Test view"
@@ -90,6 +91,12 @@
       "comment": "Condition summary"
     },
     "Awake": {},
+    "Awake for": {
+      "comment": "Popover hero, before the time awake, e.g. Awake for 2:14"
+    },
+    "Awake for %@": {
+      "comment": "Popover hero, VoiceOver: time awake"
+    },
     "Battery %@": {
       "comment": "Status chip, VoiceOver"
     },
@@ -293,6 +300,7 @@
       "comment": "Preset chip, VoiceOver"
     },
     "Keep it awake for a while, or until you turn it off.": {},
+    "Keep the display on": {},
     "Keep your Mac awake automatically.": {
       "comment": "Main window section subtitle"
     },
@@ -374,6 +382,9 @@
     "No active sessions": {},
     "No devices found. Connect it, then choose it here.": {},
     "No rules yet. Start from one of these, or choose New Rule.": {},
+    "No sleep on power": {
+      "comment": "Status chip"
+    },
     "None chosen": {},
     "None right now": {
       "comment": "Test view: empty list"
@@ -415,6 +426,9 @@
     },
     "On power and on a Wi-Fi network you choose": {
       "comment": "Rule template description"
+    },
+    "On the power adapter, all sleep is prevented": {
+      "comment": "Status chip, VoiceOver"
     },
     "On the power adapter, prevent all sleep": {},
     "Only during certain hours": {},
@@ -517,6 +531,8 @@
     "Schedule": {
       "comment": "Condition type"
     },
+    "Screen can sleep": {},
+    "Screen stays on": {},
     "Select All": {
       "comment": "Menu item"
     },
@@ -526,6 +542,7 @@
     "Sessions": {
       "comment": "Section header"
     },
+    "Sessions you start keep the screen on unless this is on. Rules choose for themselves.": {},
     "Settings": {
       "comment": "Sidebar group"
     },
@@ -738,6 +755,9 @@
     "macOS refused to keep your Mac awake (error %d).": {
       "comment": "Popover: IOKit error"
     },
+    "since %@": {
+      "comment": "When a session started; the argument is a time of day"
+    },
     "uawake": {
       "comment": "Main window title"
     },
@@ -761,6 +781,9 @@
     },
     "until %@": {
       "comment": "Session end; the argument is a time of day"
+    },
+    "until %@ battery · %@": {
+      "comment": "Battery-level session row: the battery percentage, then “since 9:50”"
     },
     "until battery %@": {
       "comment": "Session end; the argument is a battery percentage"

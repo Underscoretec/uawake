@@ -135,7 +135,7 @@ private struct RuleEditTab: View {
             }
             Section {
                 Toggle("Mac", isOn: .constant(true)).disabled(true)
-                Toggle("Display", isOn: mode(.display))
+                Toggle("Keep the display on", isOn: mode(.display))
                 Toggle("Disk", isOn: mode(.disk))
                 DurationPicker(
                     title: String(localized: "Keep awake after conditions end for", comment: "Rule editor: linger"),

@@ -25,6 +25,15 @@ public struct Session: Identifiable, Equatable, Sendable {
     /// Also hold a `PreventSystemSleep` assertion while on AC power, whatever
     /// ``SessionEngine/preventsSleepOnPower`` says. Rules set it per rule.
     public let preventsSleepOnPower: Bool
+    /// Time spent paused and since resumed; excluded from ``awakeTime(at:)``.
+    public internal(set) var pausedDuration: TimeInterval = 0
+    /// When the current pause began; `nil` unless paused.
+    public internal(set) var pausedAt: Date?
+
+    /// How long this session has kept the Mac awake: since `startedAt`, minus paused time.
+    public func awakeTime(at now: Date) -> TimeInterval {
+        max(0, (pausedAt ?? now).timeIntervalSince(startedAt) - pausedDuration)
+    }
 
     public init(
         id: UUID = UUID(),

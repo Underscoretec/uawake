@@ -11,7 +11,21 @@ All notable changes to uawake are recorded here. The format follows
   hold a `PreventSystemSleep` assertion, like `caffeinate -s`, shown in `pmset -g assertions` as
   `uawake: <reason> (on power)`. It is dropped on battery. Rules get the same option in the editor.
   Closing the lid still sleeps the Mac unless an external display is connected. Setting key
-  `PreventSleepOnPower`; rule field `preventSleepOnPower`.
+  `PreventSleepOnPower`; rule field `preventSleepOnPower`. The popover's status strip shows
+  "No sleep on power" while it is in effect.
+- "Allow the display to sleep during sessions" (General, off by default; key `AllowDisplaySleep`).
+- `uawake://activate?display=0` starts a system-only session whatever the setting says.
+- Sessions without an end time show how long they have kept the Mac awake: the hero reads
+  "Awake for 2:14" with "since 9:50 AM · Indefinite" beneath, excluding paused time; rows show
+  "since 9:50" (rules: since they started matching) or "until 20% battery · since 9:50".
+- The hero says "Screen stays on" or "Screen can sleep".
+
+### Fixed
+- Manual and URL sessions now keep the display awake (`PreventUserIdleDisplaySleep`) as well as
+  the system, so the screen no longer dims and locks during a session. Rules choose per rule with
+  the editor's "Keep the display on" toggle (Presenting and On a call keep it on).
+- "On the power adapter, prevent all sleep" now applies from launch; before, it took effect only
+  after a setting changed.
 
 ## [1.0.0-alpha.3] - 2026-11-11
 

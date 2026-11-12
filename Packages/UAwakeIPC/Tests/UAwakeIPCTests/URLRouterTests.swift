@@ -15,8 +15,12 @@ struct URLRouterTests {
     }
 
     @discardableResult
-    func route(_ string: String, defaultCondition: EndCondition = .indefinite) -> Bool {
-        URLRouter.route(URL(string: string)!, to: engine, defaultCondition: defaultCondition)
+    func route(
+        _ string: String, defaultCondition: EndCondition = .indefinite,
+        defaultModes: Set<AwakeMode> = [.system, .display]
+    ) -> Bool {
+        URLRouter.route(
+            URL(string: string)!, to: engine, defaultCondition: defaultCondition, defaultModes: defaultModes)
     }
 
     @Test func activateIndefinite() throws {
@@ -24,7 +28,20 @@ struct URLRouterTests {
         let session = try #require(engine.sessions.first)
         #expect(session.source == .url)
         #expect(session.endCondition == .indefinite)
-        #expect(Array(assertions.live.values) == ["uawake: URL: indefinite"])
+        #expect(session.modes == [.system, .display])
+        #expect(Set(assertions.live.values) == ["uawake: URL: indefinite"])
+    }
+
+    @Test func toggleUsesTheDefaultModes() {
+        route("uawake://toggle", defaultModes: [.system])
+        #expect(engine.sessions.map(\.modes) == [[.system]])
+    }
+
+    @Test func displayZeroIsSystemOnly() throws {
+        route("uawake://activate?display=0")
+        route("uawake://activate?display=1", defaultModes: [.system])
+        route("uawake://activate", defaultModes: [.system])
+        #expect(engine.sessions.map(\.modes) == [[.system], [.system, .display], [.system]])
     }
 
     @Test func activateDuration() throws {

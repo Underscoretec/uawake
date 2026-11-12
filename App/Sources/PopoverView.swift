@@ -130,8 +130,17 @@ struct HeroView: View {
             }
             .font(.caption.weight(.semibold))
             HStack(alignment: .firstTextBaseline) {
+                if hero.kind == .indefinite {
+                    Text("Awake for", comment: "Popover hero, before the time awake, e.g. Awake for 2:14")
+                        .font(large ? .title2.weight(.semibold) : .title3.weight(.semibold))
+                        .accessibilityHidden(true)
+                }
                 Group {
-                    if let countdown = hero.countdown {
+                    if let countdown = hero.countdown, hero.kind == .indefinite {
+                        Text(countdown)
+                            .accessibilityLabel(
+                                Text("Awake for \(countdown)", comment: "Popover hero, VoiceOver: time awake"))
+                    } else if let countdown = hero.countdown {
                         Text(countdown)
                             .accessibilityLabel(Text("\(countdown) left", comment: "Popover: time remaining"))
                     } else {
@@ -141,11 +150,18 @@ struct HeroView: View {
                 .font(.system(size: large ? 56 : 44, weight: .bold))
                 .monospacedDigit()
                 .foregroundStyle(hero.isEndingSoon ? Tone.caution.color : Color.primary)
-                .contentTransition(.numericText(countsDown: true))
+                .contentTransition(.numericText(countsDown: hero.kind == .timed))
                 Spacer()
                 toggle
             }
             Text(hero.caption).font(.callout).foregroundStyle(Color.secondaryText)
+            Label {
+                Text(hero.keepsScreenOn ? "Screen stays on" : "Screen can sleep")
+            } icon: {
+                Image(systemName: hero.keepsScreenOn ? "display" : "moon.zzz")
+            }
+            .font(.caption)
+            .foregroundStyle(Color.secondaryText)
             if let progress = hero.progress {
                 ThinProgressBar(value: progress, tint: (hero.isEndingSoon ? Tone.caution : Tone.good).color)
                     .padding(.top, 4)

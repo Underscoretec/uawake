@@ -213,9 +213,58 @@ struct PopoverViewModelTests {
         hero = model.hero(now: clock.now + 3400)
         #expect(hero.isEndingSoon)  // Within the 5-minute warning.
         try engine.start(SessionRequest(source: .url, reason: .custom("x"), endCondition: .indefinite))
-        hero = model.hero(now: clock.now)
+        hero = model.hero(now: clock.now + 8040)
+        let since = PopoverViewModel.sinceText(clock.now)
         #expect(
-            hero == Hero(kind: .indefinite, countdown: nil, caption: "Indefinite", progress: nil, isEndingSoon: false))
+            hero
+                == Hero(
+                    kind: .indefinite, countdown: "2:14", caption: "\(since) · Indefinite", progress: nil,
+                    isEndingSoon: false, keepsScreenOn: true))
+    }
+
+    @Test func elapsedTextIsHoursAndMinutesRoundedDown() {
+        #expect(PopoverViewModel.elapsedText(0) == "0:00")
+        #expect(PopoverViewModel.elapsedText(299) == "0:04")
+        #expect(PopoverViewModel.elapsedText(8099) == "2:14")
+        #expect(PopoverViewModel.elapsedText(26 * 3600 + 180) == "26:03")
+    }
+
+    @Test func heroAwakeTimeExcludesPausedTime() throws {
+        model.start(.indefinite)
+        clock.advance(by: 3600)
+        engine.handle(.userSessionDidResignActive)
+        clock.advance(by: 1800)
+        engine.handle(.userSessionDidBecomeActive)
+        clock.advance(by: 600)
+        #expect(model.hero(now: clock.now).countdown == "1:10")
+    }
+
+    @Test func sessionsKeepTheScreenOnUnlessTheSettingAllowsSleep() {
+        model.start(.indefinite)
+        #expect(engine.sessions[0].modes == [.system, .display])
+        #expect(model.hero(now: clock.now).keepsScreenOn)
+        settings.allowDisplaySleep = true
+        model.start(.indefinite)
+        #expect(engine.sessions[0].modes == [.system])
+        #expect(!model.hero(now: clock.now).keepsScreenOn)
+    }
+
+    @Test func rowsWithoutADeadlineShowWhenTheyStarted() throws {
+        try engine.start(SessionRequest(source: .url, reason: .custom("i"), endCondition: .indefinite))
+        try engine.start(SessionRequest(source: .url, reason: .custom("b"), endCondition: .batteryLevel(20)))
+        let since = PopoverViewModel.sinceText(clock.now)
+        #expect(model.remaining(model.rows[0], now: clock.now) == since)
+        #expect(model.remaining(model.rows[1], now: clock.now) == "until 20% battery · \(since)")
+    }
+
+    @Test func onPowerChipShowsWhileTheAssertionIsHeld() {
+        engine.preventsSleepOnPower = true
+        engine.apply(.test(source: .ac))
+        #expect(!model.statusChips.contains { $0.id == "onPower" })
+        model.start(.indefinite)
+        #expect(model.statusChips.contains { $0.id == "onPower" && $0.text == "No sleep on power" })
+        engine.apply(.test(source: .battery))
+        #expect(!model.statusChips.contains { $0.id == "onPower" })
     }
 
     @Test func heroCountsDownToTheLastTimedSession() throws {

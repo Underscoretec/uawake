@@ -27,6 +27,7 @@ public struct UAwakeSettings {
             SettingsKey.endWarningMinutes.rawValue: 5,
             SettingsKey.showsCountdown.rawValue: false,
             SettingsKey.preventSleepOnPower.rawValue: false,
+            SettingsKey.allowDisplaySleep.rawValue: false,
             SettingsKey.updateChannel.rawValue: UpdateChannel.stable.rawValue,
             SettingsKey.iconStyle.rawValue: IconStyle.uawake.rawValue,
             SettingsKey.firstRunCompleted.rawValue: false,
@@ -127,6 +128,18 @@ public struct UAwakeSettings {
     public var preventSleepOnPower: Bool {
         get { bool(.preventSleepOnPower, default: false) }
         nonmutating set { set(newValue, .preventSleepOnPower) }
+    }
+
+    /// "Allow the display to sleep during sessions". Off by default: manual and URL
+    /// sessions keep the display awake too.
+    public var allowDisplaySleep: Bool {
+        get { bool(.allowDisplaySleep, default: false) }
+        nonmutating set { set(newValue, .allowDisplaySleep) }
+    }
+
+    /// Modes for manual and URL sessions (unless a URL sets `display=`).
+    public var sessionModes: Set<AwakeMode> {
+        allowDisplaySleep ? [.system] : [.system, .display]
     }
 
     // MARK: Appearance and updates
@@ -259,6 +272,7 @@ public enum SettingsKey: String, CaseIterable, Sendable {
     case rulesPaused = "RulesPaused"
     case rulesPausedUntil = "RulesPausedUntil"
     case preventSleepOnPower = "PreventSleepOnPower"
+    case allowDisplaySleep = "AllowDisplaySleep"
 }
 
 /// Menu bar icon family. The app maps each to an active and an inactive image: the uawake

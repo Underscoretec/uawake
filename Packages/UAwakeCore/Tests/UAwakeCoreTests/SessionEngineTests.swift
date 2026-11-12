@@ -378,6 +378,34 @@ struct SessionEngineTests {
         #expect(assertions.live.count == 3)
     }
 
+    @Test func awakeTimeExcludesPausedPeriods() async throws {
+        let session = try engine.start(request(.indefinite))
+        clock.advance(by: 600)
+        try engine.pause(session.id)
+        clock.advance(by: 300)
+        #expect(engine.sessions[0].awakeTime(at: clock.now) == 600)  // Frozen while paused.
+        try engine.resume(session.id)
+        clock.advance(by: 60)
+        #expect(engine.sessions[0].awakeTime(at: clock.now) == 660)
+        try engine.pause(session.id)
+        clock.advance(by: 100)
+        try engine.resume(session.id)
+        #expect(engine.sessions[0].awakeTime(at: clock.now) == 660)
+    }
+
+    @Test func isPreventingAllSleepFollowsTheOnPowerAssertion() throws {
+        engine.preventsSleepOnPower = true
+        engine.apply(.test(source: .ac))
+        #expect(!engine.isPreventingAllSleep)
+        let session = try engine.start(request(.indefinite))
+        #expect(engine.isPreventingAllSleep)
+        engine.apply(.test(source: .battery))
+        #expect(!engine.isPreventingAllSleep)
+        engine.apply(.test(source: .ac))
+        engine.stop(session.id, cause: .stoppedByUser)
+        #expect(!engine.isPreventingAllSleep)
+    }
+
     @Test func failedOnPowerAcquireKeepsTheSession() throws {
         let session = try engine.start(request(.indefinite))
         engine.preventsSleepOnPower = true

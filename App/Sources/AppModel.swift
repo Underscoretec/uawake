@@ -44,10 +44,9 @@ final class AppModel {
         let engine = DefaultSessionEngine(
             assertions: IOKitAssertionProvider(),
             clock: clock,
-            guards: DefaultSessionEngine.standardGuards,
-            policy: settings.policy,
-            endWarning: settings.endWarning
+            guards: DefaultSessionEngine.standardGuards
         )
+        engine.apply(settings)  // Every setting the engine reads, as on each later change.
         self.engine = engine
         popover = PopoverViewModel(engine: engine, settings: settings)
         notifications = NotificationController(engine: engine, settings: settings)
@@ -121,7 +120,8 @@ final class AppModel {
     }
 
     func open(_ url: URL) {
-        URLRouter.route(url, to: engine, defaultCondition: settings.primaryClickAction)
+        URLRouter.route(
+            url, to: engine, defaultCondition: settings.primaryClickAction, defaultModes: settings.sessionModes)
     }
 
     /// Ends every session with `.appQuit` so history (from 1.2) records why.

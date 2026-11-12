@@ -28,6 +28,7 @@ struct URLCommandTests {
             "uawake://activate?display=true&reason=Long%20export",
             .activate(ActivateOptions(keepsDisplayAwake: true, reason: "Long export"))
         ),
+        ("uawake://activate?display=0", .activate(ActivateOptions(keepsDisplayAwake: false))),
         ("uawake://deactivate", .deactivate),
         ("uawake://toggle", .toggle),
         ("UAWAKE://Toggle", .toggle),

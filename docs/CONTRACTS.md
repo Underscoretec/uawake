@@ -57,6 +57,8 @@ frees them. Modes map to `PreventUserIdleSystemSleep`, `PreventUserIdleDisplaySl
 `uawake: <reason> (on power)`; the engine holds it per active session only while the last device
 state is on AC power and `preventsSleepOnPower` (non-rule sessions) or the session's own
 `preventsSleepOnPower` (rules) asks for it. A failed on-power acquire is logged, never fatal.
+`isPreventingAllSleep` is true while any such assertion is held (the popover's "No sleep on power"
+chip). `Session.awakeTime(at:)` is time since `startedAt` minus paused time.
 The fake records live handles so tests assert "nothing leaked".
 The IOKit conformer lives in UAwakeSystem so Core stays Foundation-only.
 
@@ -106,7 +108,7 @@ so an invalid URL is rejected before the engine is touched. Strict:
 - `until` is 24-hour `HH:mm`; `display` is `1`/`true` or `0`/`false`.
 - `reason` is 1–128 characters and becomes `SessionReason.custom`.
 
-`URLRouter.route(_:to:defaultCondition:)` carries a URL out on the engine:
+`URLRouter.route(_:to:defaultCondition:defaultModes:)` carries a URL out on the engine:
 `activate` starts a `.url` session, `deactivate` stops manual and URL sessions, and
 `toggle` calls `engine.toggle` with the primary-click preset. Invalid URLs and refused
 starts change nothing and log a warning.

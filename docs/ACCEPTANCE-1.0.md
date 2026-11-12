@@ -116,7 +116,33 @@ screenshot targets unregister afterwards, `make release` deletes its archive, ex
 once the DMG and zip exist, and `acceptance.sh` removes `build.noindex/tmp` on exit.
 
 ## Results from the maintainer's checklist
-**Pending.** Add each `docs/CHECKLIST-1.0.md` result here, with the date and build.
+Add each `docs/CHECKLIST-1.0.md` result here, with the date and build.
+
+### On the power adapter, prevent all sleep
+**Pass** (12 Nov 2026, maintainer, macOS 27.0.1, MacBook Air M5; Debug build of 1.0.0 (3) plus
+`a19eb2b`). With the setting on and a 15-minute manual session, `pmset -g assertions` showed:
+
+| Power | uawake assertions |
+| --- | --- |
+| Plugged in | `PreventUserIdleSystemSleep "uawake: Manual: 15 minutes"`, `PreventSystemSleep "uawake: Manual: 15 minutes (on power)"` |
+| Unplugged | `PreventUserIdleSystemSleep "uawake: Manual: 15 minutes"` only |
+
+It also showed the display bug fixed in alpha.4: manual sessions held no `PreventUserIdleDisplaySleep`.
+
+### Display awake by default (alpha.4)
+**Pass** (12 Nov 2026, Debug build of 1.0.0-alpha.4 before the release commit, on AC power,
+`PreventSleepOnPower` on). The default session (`uawake://toggle`, primary click preset 2 h) held:
+
+```
+PreventUserIdleSystemSleep  "uawake: URL: 2 hours"
+PreventUserIdleDisplaySleep "uawake: URL: 2 hours"
+PreventSystemSleep          "uawake: URL: 2 hours (on power)"
+```
+
+`uawake://activate?display=0&reason=System%20only` held only `PreventUserIdleSystemSleep`. The first
+run, before a fix, had no on-power assertion: the engine read `PreventSleepOnPower` only after a
+setting changed, not at launch. Scripting a real menu bar click was not allowed (System Events
+automation), so the click path is covered by `PopoverViewModelTests`.
 
 ## Open items
 
