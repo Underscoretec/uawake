@@ -1,3 +1,3 @@
 // The single source of the version and build number.
 MARKETING_VERSION = 1.0.0
-CURRENT_PROJECT_VERSION = 3
+CURRENT_PROJECT_VERSION = 4

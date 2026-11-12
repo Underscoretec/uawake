@@ -6,6 +6,12 @@ All notable changes to uawake are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0-alpha.4] - 2026-11-12
+
+Fourth internal alpha (version 1.0.0, build 4): the screen stays on, awake time, and an option to
+prevent all sleep on the power adapter. Unsigned; the 8-hour performance soak is still to come
+before 1.0.
+
 ### Added
 - "On the power adapter, prevent all sleep" (General, off by default): on AC power, sessions also
   hold a `PreventSystemSleep` assertion, like `caffeinate -s`, shown in `pmset -g assertions` as
