@@ -144,6 +144,21 @@ run, before a fix, had no on-power assertion: the engine read `PreventSleepOnPow
 setting changed, not at launch. Scripting a real menu bar click was not allowed (System Events
 automation), so the click path is covered by `PopoverViewModelTests`.
 
+### Overnight, no sleep (alpha.5)
+**Pass** (12–13 Nov 2026, installed copy of 1.0.0-alpha.5, on AC power, `PreventSleepOnPower` on,
+Indefinite session, watermark on). Log: `build.noindex/overnight/overnight-20261112-2334.log`.
+
+- 727 log entries at 30 s intervals over 363 min (23:34–05:37), no gaps.
+- uawake held `PreventUserIdleSystemSleep`, `PreventUserIdleDisplaySleep` and `PreventSystemSleep`
+  (on power) for 6 h 00 m.
+- `pmset -g log` shows no sleep or display-off events after the 23:34:08 wake.
+
+### Watermark overnight and in screen recordings (alpha.5)
+**Pending (you).**
+
+- Watermark in the morning: not yet recorded.
+- QuickTime screen recording, watermark visible: not yet recorded.
+
 ## Open items
 
 ### Flaky test: `SignalHubTests.everyMonitorTypeIsForwardedAsItsSignal`
