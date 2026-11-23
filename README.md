@@ -10,7 +10,7 @@ rules do it for you: while you present, are on a call, build or download. uawake
 guards stop sessions at low battery, in Low Power Mode, when your Mac gets too warm, or after a
 maximum duration.
 
-**Status:** 1.0.0 alpha 2, in internal testing ([Testing the alpha](#testing-the-alpha)). MIT licence.
+**Status:** 1.0.0 alpha 6, in internal testing ([Testing the alpha](#testing-the-alpha)). MIT licence.
 
 <p>
   <img src="docs/design/screenshots/popover-one-session-light.png" width="300" alt="The uawake popover keeping the Mac awake for one hour, in light mode">

@@ -6,6 +6,34 @@ All notable changes to uawake are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0-alpha.6] - 2026-11-23
+
+Sixth internal alpha (version 1.0.0, build 6), from tester feedback: a new click model and a
+clearer menu bar icon. Unsigned; the 8-hour performance soak is still to come before 1.0.
+
+### Changed
+- Click model: double-click the menu bar icon to start or stop the default session (as before,
+  only manual and URL sessions count). A single click opens the popover once the system
+  double-click interval has passed, so a single click never starts or stops anything; right-click
+  and Option-click open it at once. Nothing changes on screen until the click is decided. The
+  popover's idle card says "Tip: double-click the menu bar icon to start or stop."; the presets
+  stay in the popover while a session runs. The General setting is now "Double-click the menu bar
+  icon to keep awake for" (still Indefinite by default; key `PrimaryClickAction` unchanged).
+- Menu bar icon: idle, the native dimmed look; awake, the bright cup with steam in a uawake-blue
+  capsule, with the countdown (when on) inside it. The capsule turns amber within the end-warning
+  window and red for about 3 seconds when a guard stops a session. Increase Contrast darkens it.
+  It redraws only when its state or text changes. VoiceOver labels are unchanged.
+
+### Added
+- Appearance › "Highlight when active": Capsule (default), Coloured icon or None (key
+  `MenuBarHighlight`: `capsule`, `colouredIcon`, `none`).
+
+### Fixed
+- `SignalHubTests.everyMonitorTypeIsForwardedAsItsSignal` no longer fails now and then: it waits for
+  each signal and ignores the arrival order of independent streams (50 of 50 runs pass).
+- A test now covers "On the power adapter, prevent all sleep" applying from launch (the alpha.4
+  fix), through an injectable startup path.
+
 ## [1.0.0-alpha.5] - 2026-11-12
 
 Fifth internal alpha (version 1.0.0, build 5): the on-screen watermark. Unsigned; the 8-hour

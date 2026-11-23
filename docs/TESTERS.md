@@ -8,7 +8,7 @@ surprises you.
 
 Alpha builds are unsigned and not notarized, so macOS blocks them the first time.
 
-1. Download `uawake-1.0.0-alpha.2.dmg` from
+1. Download `uawake-1.0.0-alpha.6.dmg` from
    [GitHub Releases](https://github.com/Underscoretec/uawake/releases).
 2. Open it and drag uawake to Applications (replace any older copy).
 3. Open uawake. macOS says it can't verify the app; click **Done**.
