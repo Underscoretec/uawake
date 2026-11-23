@@ -7,5 +7,30 @@
     <link>https://underscoretec.github.io/uawake/appcast.xml</link>
     <description>uawake updates</description>
     <language>en</language>
+    <item>
+      <title>uawake 1.0.0-alpha.7</title>
+      <pubDate>Mon, 23 Nov 2026 09:27:13 +0000</pubDate>
+      <sparkle:version>7</sparkle:version>
+      <sparkle:shortVersionString>1.0.0-alpha.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:channel>beta</sparkle:channel>
+      <sparkle:fullReleaseNotesLink>https://github.com/Underscoretec/uawake/releases/tag/v1.0.0-alpha.7</sparkle:fullReleaseNotesLink>
+      <description sparkle:format="markdown"><![CDATA[
+Seventh internal alpha (version 1.0.0, build 7): automatic updates. The first build that can
+update itself; alpha.6 and earlier must be replaced by hand once. Unsigned.
+
+### Added
+- Automatic updates with Sparkle: uawake checks once a day (on by default) and asks before
+  installing; main window › Updates has "Check for Updates…". Updates are verified with an EdDSA
+  signature. The feed is `https://underscoretec.github.io/uawake/appcast.xml`; archives are the
+  GitHub Release zips.
+- Acknowledgements in the README.
+
+### Changed
+- The update channel (`UpdateChannel`) defaults to `beta` while uawake is in pre-release; alphas
+  are published on it. It becomes `stable` with 1.0.
+]]></description>
+      <enclosure url="https://github.com/Underscoretec/uawake/releases/download/v1.0.0-alpha.7/uawake-1.0.0-alpha.7.zip" type="application/octet-stream" sparkle:edSignature="blLdjhsQwqgo5QC03ZLsKINf22PnhLhvM61DlMmwipfo8U5ezqQE+HTnWGWw25qjQR6bPxuufuAbk+T6W1e9Aw==" length="2632483"/>
+    </item>
   </channel>
 </rss>
