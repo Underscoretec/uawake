@@ -6,6 +6,11 @@ All notable changes to uawake are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0-alpha.7] - 2026-11-23
+
+Seventh internal alpha (version 1.0.0, build 7): automatic updates. The first build that can
+update itself; alpha.6 and earlier must be replaced by hand once. Unsigned.
+
 ### Added
 - Automatic updates with Sparkle: uawake checks once a day (on by default) and asks before
   installing; main window › Updates has "Check for Updates…". Updates are verified with an EdDSA
