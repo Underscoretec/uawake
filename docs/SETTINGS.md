@@ -34,6 +34,15 @@ immediately.
 | `WatermarkDrifts` | Boolean | `true` | | The centred style moves a little every few minutes (never with Reduce Motion) |
 | `WatermarkShortcutKeyCode` | Integer | none | As `GlobalShortcutKeyCode` | Global shortcut that shows or hides the watermark (toggles `WatermarkEnabled`) |
 | `WatermarkShortcutModifiers` | Integer | none | As `GlobalShortcutModifiers` | Its modifiers |
+| `LockShortcutKeyCode` | Integer | none | As `GlobalShortcutKeyCode` | Global shortcut for "Lock now" |
+| `LockShortcutModifiers` | Integer | none | As `GlobalShortcutModifiers` | Its modifiers |
+| `AutoLockEnabled` | Boolean | `false` | | "Lock when idle during a session" (Lock & dim, alpha.8) |
+| `AutoLockMinutes` | Integer | `10` | 1–120 | Idle minutes before auto-lock |
+| `DimEnabled` | Boolean | `false` | | "Dim the screen when idle during a session" |
+| `DimMinutes` | Integer | `5` | 1–120 | Idle minutes before the dim. With auto-lock on, kept at least a minute below `AutoLockMinutes` (shortened, or off if there is no room) |
+| `DimDarkness` | Integer | `60` | 20–90 (%) | How dark the dim is |
+| `DimKeepsWatermark` | Boolean | `true` | | The watermark stays above the dim |
+| `DimSkipsWhenPlaying` | Boolean | `true` | | No dim while another app holds a display-sleep assertion (video, presentations) |
 | `UpdateChannel` | String | `beta` | `stable`, `beta` | Sparkle update channel. `beta` also gets alphas; the default becomes `stable` with 1.0 |
 | `IconStyle` | String | `uawake` | `uawake`, `cup`, `eye`, `bolt` | Menu bar icon family |
 | `MenuBarHighlight` | String | `capsule` | `capsule`, `colouredIcon`, `none` | "Highlight when active" (Appearance, 1.0): a uawake-blue capsule behind the icon and countdown, the icon alone in colour, or no highlight. Amber near the end, red for 3 s when a guard stops a session |

@@ -4,7 +4,7 @@ import UAwakeCore
 
 /// Sections of the main window's sidebar. Diagnostics (1.2) joins later.
 enum MainSection: String, CaseIterable, Hashable, Identifiable {
-    case overview, rules, durations, safety, appearance, general, updates, about
+    case overview, rules, durations, safety, lockDim, appearance, general, updates, about
     var id: Self { self }
 }
 
@@ -126,6 +126,8 @@ final class PopoverViewModel {
 
     /// Set by ``AppModel``; `nil` in tests that don't involve rules.
     @ObservationIgnored var rules: RulesModel?
+    /// Set by ``AppModel``.
+    @ObservationIgnored var lockDim: LockDimModel?
     @ObservationIgnored var openMainWindow: (MainSection?) -> Void = { _ in }
     @ObservationIgnored var showPopover: () -> Void = {}
 

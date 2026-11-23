@@ -159,6 +159,7 @@ extension MainSection {
         case .rules: String(localized: "Rules", comment: "Main window section")
         case .durations: String(localized: "Durations", comment: "Main window section")
         case .safety: String(localized: "Safety", comment: "Main window section")
+        case .lockDim: String(localized: "Lock & dim", comment: "Main window section")
         case .appearance: String(localized: "Appearance", comment: "Main window section")
         case .general: String(localized: "General", comment: "Main window section")
         case .updates: String(localized: "Updates", comment: "Main window section")
@@ -177,6 +178,10 @@ extension MainSection {
         case .safety:
             String(
                 localized: "When uawake stops by itself to protect your Mac.", comment: "Main window section subtitle")
+        case .lockDim:
+            String(
+                localized: "Lock the screen while uawake keeps running, and dim it when you're away.",
+                comment: "Main window section subtitle")
         case .appearance:
             String(localized: "How uawake looks in the menu bar.", comment: "Main window section subtitle")
         case .general:
@@ -194,6 +199,7 @@ extension MainSection {
         case .rules: "wand.and.stars"
         case .durations: "timer"
         case .safety: "shield.lefthalf.filled"
+        case .lockDim: "lock.display"
         case .appearance: "paintbrush"
         case .general: "gearshape"
         case .updates: "arrow.down.circle"

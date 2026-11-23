@@ -21,7 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         let model = AppModel(
             settingsSuite: options.settingsSuite, fixedDeviceState: options.deviceState, rulesFile: options.rulesFile,
-            rulesFixture: options.rulesFixture)
+            rulesFixture: options.rulesFixture,
+            passwordRequirement: options.passwordRequirement)
         model.rules.uiTestEditor = options.ruleEditor
         self.model = model
         if options.showsCountdown { model.settings.showsCountdown = true }
@@ -50,7 +51,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self.backdrop?.level = NSWindow.Level(rawValue: WatermarkController.level.rawValue - 1)
                 if let visible = NSScreen.main?.visibleFrame { self.backdrop?.setFrame(visible, display: true) }
             } else if options.showsMainWindow {
-                mainWindow.show(section: options.rulesFixture && options.showsRulesSection ? .rules : .overview)
+                mainWindow.show(
+                    section: options.showsLockSection
+                        ? .lockDim : (options.rulesFixture && options.showsRulesSection ? .rules : .overview))
             } else if options.showsRealPopover {
                 showRealPopover(statusItem)
             } else {
@@ -201,6 +204,10 @@ struct LaunchOptions {
     var rulesFixture = false
     var showsRulesSection = false
     var ruleEditor: RulesModel.UITestEditor?
+    /// What the inert screen locker reports (`-UITestPasswordRequirement immediate|never|delay:300|unknown`).
+    var passwordRequirement: String?
+    /// Opens the Lock & dim section (`-UITestLockSection`).
+    var showsLockSection = false
 
     var settingsSuite: String? {
         if uiTesting { return "com.underscoretec.uawake.uitests" }
@@ -243,6 +250,8 @@ struct LaunchOptions {
         rulesFile = value(after: "-RulesFile")
         rulesFixture = arguments.contains("-UITestRules")
         showsRulesSection = arguments.contains("-UITestRulesSection")
+        passwordRequirement = value(after: "-UITestPasswordRequirement")
+        showsLockSection = arguments.contains("-UITestLockSection")
         ruleEditor = value(after: "-UITestRuleEditor").flatMap(RulesModel.UITestEditor.init(rawValue:))
     }
 }

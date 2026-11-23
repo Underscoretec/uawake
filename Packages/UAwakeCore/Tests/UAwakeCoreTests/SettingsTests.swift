@@ -57,7 +57,10 @@ struct SettingsTests {
                 "FirstRunCompleted", "RulesPaused", "RulesPausedUntil", "PreventSleepOnPower", "AllowDisplaySleep",
                 "WatermarkEnabled", "WatermarkStyle", "WatermarkTextColour", "WatermarkTimerColour", "WatermarkOpacity",
                 "WatermarkSize", "WatermarkHiddenFromCapture", "WatermarkHiddenInFullScreen", "WatermarkDrifts",
-                "WatermarkShortcutKeyCode", "WatermarkShortcutModifiers", "MenuBarHighlight",
+                "WatermarkShortcutKeyCode", "WatermarkShortcutModifiers", "MenuBarHighlight", "LockShortcutKeyCode",
+                "LockShortcutModifiers", "AutoLockEnabled", "AutoLockMinutes", "DimEnabled", "DimMinutes",
+                "DimDarkness",
+                "DimKeepsWatermark", "DimSkipsWhenPlaying",
             ])
     }
 

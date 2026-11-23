@@ -107,6 +107,10 @@ final class WatermarkController {
             seen.insert(id)
             let window = windows[id] ?? makeWindow()
             windows[id] = window
+            // While the dim shows, the watermark rises above it, or stays under it when the setting is off.
+            let dim = model.lockDim
+            window.level =
+                dim?.isDimmed == true && dim?.dimKeepsWatermark == true ? LockDimModel.aboveDimLevel : Self.level
             window.sharingType = settings.watermarkHiddenFromCapture ? .none : .readOnly
             var behavior: NSWindow.CollectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
             if !hideInFullScreen { behavior.insert(.fullScreenAuxiliary) }

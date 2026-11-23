@@ -11,10 +11,12 @@ public enum URLRouter {
     /// - Parameters:
     ///   - defaultCondition: the primary-click preset, used by `uawake://toggle`.
     ///   - defaultModes: ``UAwakeSettings/sessionModes``, used unless the URL sets `display=`.
+    ///   - lock: called for `uawake://lock`; the app locks the screen. The engine is not involved.
     /// - Returns: `false` if the URL was rejected or the engine refused it.
     @discardableResult
     public static func route(
-        _ url: URL, to engine: any SessionEngine, defaultCondition: EndCondition, defaultModes: Set<AwakeMode>
+        _ url: URL, to engine: any SessionEngine, defaultCondition: EndCondition, defaultModes: Set<AwakeMode>,
+        lock: @MainActor () -> Void = {}
     ) -> Bool {
         let command: URLCommand
         do {
@@ -32,6 +34,8 @@ public enum URLRouter {
             case .deactivate:
                 engine.stopAll(source: .manual, cause: .stoppedByUser)
                 engine.stopAll(source: .url, cause: .stoppedByUser)
+            case .lock:
+                lock()
             case .toggle:
                 try engine.toggle(
                     SessionRequest(

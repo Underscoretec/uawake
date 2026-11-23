@@ -232,7 +232,7 @@ public final class RuleEngine {
         case .userSessionDidBecomeActive:
             frozen = false
             evaluate()
-        case .systemWillSleep:
+        case .systemWillSleep, .screenDidLock, .screenDidUnlock:
             break
         case .systemDidWake:
             // Samples spanning the sleep are meaningless, and in-use flags settle again.

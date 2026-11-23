@@ -13,10 +13,12 @@ import UAwakeCore
 /// | `uawake://activate?display=0` | system only, whatever the display setting |
 /// | `uawake://deactivate` | `.deactivate` — ends all manual and URL sessions |
 /// | `uawake://toggle` | `.toggle` — ``SessionEngine/toggle(_:)`` with the default session |
+/// | `uawake://lock` | `.lock` — turns the screen off and locks it if the Mac asks for a password; sessions keep running |
 public enum URLCommand: Equatable, Sendable {
     case activate(ActivateOptions)
     case deactivate
     case toggle
+    case lock
 
     /// Parses a `uawake://` URL.
     /// - Throws: ``URLCommandError`` for any URL outside the table above,
@@ -39,9 +41,9 @@ public enum URLCommand: Equatable, Sendable {
         }
 
         switch command {
-        case "deactivate", "toggle":
+        case "deactivate", "toggle", "lock":
             if let key = query.keys.sorted().first { throw .unknownParameter(key) }
-            self = command == "toggle" ? .toggle : .deactivate
+            self = command == "toggle" ? .toggle : command == "lock" ? .lock : .deactivate
         case "activate":
             self = .activate(try Self.activateOptions(query))
         default:

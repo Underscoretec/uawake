@@ -125,6 +125,7 @@ When a guard ends a session, the user gets a notification naming the guard.
 | `uawake://activate?display=0` | System only, even when the setting keeps the display on |
 | `uawake://deactivate` | End all manual and URL sessions |
 | `uawake://toggle` | Stop all manual and URL sessions if any are running, otherwise start the default session; rule and CLI sessions are unaffected |
+| `uawake://lock` | Turn the display off and lock the screen if the Mac asks for a password; sessions keep running (alpha.8) |
 
 Invalid URLs change nothing and log a warning; they never leave the UI out of sync with the actual state.
 

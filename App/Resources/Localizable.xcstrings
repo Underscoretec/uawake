@@ -62,6 +62,7 @@
     "Add at least one condition.": {
       "comment": "Rule editor: why Save is off"
     },
+    "After %lld min without input": {},
     "All of these are true": {},
     "All of: %@": {
       "comment": "Rule summary"
@@ -78,6 +79,7 @@
     },
     "Any calendar": {},
     "Any display": {},
+    "Any key, click or mouse move removes the dim at once. It never appears in screen sharing, screenshots or recordings. With auto-lock on, the dim comes at least a minute before the lock.": {},
     "Any of these are true": {},
     "Any of: %@": {
       "comment": "Rule summary"
@@ -96,6 +98,7 @@
     "Audio is playing": {
       "comment": "Condition summary"
     },
+    "Auto-lock": {},
     "Awake": {},
     "Awake for": {
       "comment": "Popover hero, before the time awake, e.g. Awake for 2:14"
@@ -175,11 +178,17 @@
     "Copy": {
       "comment": "Menu item"
     },
+    "Couldn't confirm the screen locked": {
+      "comment": "Notification title"
+    },
     "Couldn't keep awake": {
       "comment": "Rule status: assertion failed"
     },
     "Couldn't save rules": {
       "comment": "Rules notice"
+    },
+    "Couldn't turn the screen off": {
+      "comment": "Notification title"
     },
     "Created by Abhijit Roy · Underscore Technology": {},
     "Cup": {
@@ -189,11 +198,17 @@
     "Cut": {
       "comment": "Menu item"
     },
+    "Darkness: %lld%%": {},
     "Delete Rule": {},
     "Delete Rule…": {},
     "Delete rule %@": {},
     "Delete the rule “%@”?": {},
     "Device": {},
+    "Dim": {},
+    "Dim the screen when idle during a session": {},
+    "Dims after %lld min idle": {
+      "comment": "Popover status"
+    },
     "Direction": {},
     "Disk": {},
     "Dismiss": {},
@@ -202,6 +217,7 @@
     "Display awake": {
       "comment": "Rule summary"
     },
+    "Don't dim while another app keeps the display awake": {},
     "Done": {},
     "Double-click the icon to turn uawake on or off. Click it once for durations, sessions and settings.": {},
     "Double-click the menu bar icon to keep awake for": {},
@@ -323,6 +339,7 @@
     },
     "Keep it awake for a while, or until you turn it off.": {},
     "Keep the display on": {},
+    "Keep the watermark visible above the dim": {},
     "Keep your Mac awake automatically.": {
       "comment": "Main window section subtitle"
     },
@@ -336,6 +353,17 @@
     "Limit sessions without an end time": {},
     "Location": {
       "comment": "Permission name"
+    },
+    "Lock & dim": {
+      "comment": "Main window section"
+    },
+    "Lock now": {},
+    "Lock the screen while uawake keeps running, and dim it when you're away.": {
+      "comment": "Main window section subtitle"
+    },
+    "Lock when idle during a session": {},
+    "Locks after %lld min idle": {
+      "comment": "Popover status"
     },
     "Low Power Mode": {
       "comment": "Notification title"
@@ -459,7 +487,9 @@
     },
     "On the power adapter, prevent all sleep": {},
     "Only during certain hours": {},
+    "Only while a session is active. Off by default.": {},
     "Opacity: %lld%%": {},
+    "Open Lock Screen settings": {},
     "Open Rules": {},
     "Open Safety Settings": {},
     "Open System Settings": {},
@@ -563,6 +593,12 @@
       "comment": "Condition type"
     },
     "Screen can sleep": {},
+    "Screen off (no password required)": {
+      "comment": "Popover and settings button"
+    },
+    "Screen off after %lld min idle": {
+      "comment": "Popover status"
+    },
     "Screen stays on": {},
     "Select All": {
       "comment": "Menu item"
@@ -669,6 +705,9 @@
     "The rules file couldn't be read": {
       "comment": "Rules notice"
     },
+    "The screen was turned off, but your Mac didn't report a lock. Check Lock Screen settings, or press ⌃⌘Q.": {
+      "comment": "Notification body"
+    },
     "The uawake icon may be hidden by the camera notch or a full menu bar. To make room, hold Command and drag other icons out of the menu bar, or quit menu bar apps you don't need. You can always open uawake again from Applications or Spotlight to show its window, or set a shortcut in Settings.": {},
     "Thermal guard": {
       "comment": "Notification title"
@@ -694,6 +733,7 @@
     "True while an app has audio output running, even if it is silent.": {},
     "Turn Off": {},
     "Turn On Notifications": {},
+    "Turns the screen off and locks it. Sessions keep running. Also: uawake://lock.": {},
     "Type a shortcut…": {},
     "URL": {
       "comment": "Session source"
@@ -779,12 +819,21 @@
     "You can have up to 12 presets.": {
       "comment": "Durations settings error"
     },
+    "Your Mac asks for a password only %@ after the screen turns off, so it isn't locked yet.": {
+      "comment": "Lock caption; the argument is a time like 5 minutes"
+    },
     "Your Mac can sleep normally": {},
     "Your Mac got too warm.": {
       "comment": "Notification detail"
     },
     "Your Mac is too warm to keep awake right now.": {
       "comment": "Popover: start refused"
+    },
+    "Your Mac isn't set to ask for a password, so this turns the screen off without locking it.": {
+      "comment": "Lock caption"
+    },
+    "Your Mac won't ask for a password afterwards, so this only turns the screen off.": {
+      "comment": "Auto-lock warning"
     },
     "Your changes apply until uawake quits, but they weren't saved.": {
       "comment": "Rules notice"
@@ -808,6 +857,12 @@
     },
     "uawake blue": {
       "comment": "Watermark colour"
+    },
+    "uawake can't tell whether your Mac asks for a password.": {
+      "comment": "Lock caption"
+    },
+    "uawake couldn't ask your Mac to turn the screen off. Press ⌃⌘Q to lock it yourself.": {
+      "comment": "Notification body"
     },
     "uawake keeps your Mac awake when you need it: downloads, presentations, calls and long tasks. It stops by itself at low battery, in Low Power Mode or when your Mac gets too warm.": {},
     "uawake needs Bluetooth access to see which of your devices are connected.": {

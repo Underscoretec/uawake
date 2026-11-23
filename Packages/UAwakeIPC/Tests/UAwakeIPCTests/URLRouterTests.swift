@@ -32,6 +32,16 @@ struct URLRouterTests {
         #expect(Set(assertions.live.values) == ["uawake: URL: indefinite"])
     }
 
+    @Test func lockCallsTheAppAndLeavesSessionsAlone() throws {
+        route("uawake://activate")
+        var locks = 0
+        let routed = URLRouter.route(
+            URL(string: "uawake://lock")!, to: engine, defaultCondition: .indefinite, defaultModes: [.system],
+            lock: { locks += 1 })
+        #expect(routed && locks == 1)
+        #expect(engine.sessions.count == 1)
+    }
+
     @Test func toggleUsesTheDefaultModes() {
         route("uawake://toggle", defaultModes: [.system])
         #expect(engine.sessions.map(\.modes) == [[.system]])

@@ -58,6 +58,12 @@ extension AppModel {
         registerShortcut()
         return watermarkShortcutProblem
     }
+
+    func setLockShortcut(_ shortcut: GlobalShortcut?) -> String? {
+        settings.lockShortcut = shortcut
+        registerShortcut()
+        return lockShortcutProblem
+    }
 }
 
 extension GlobalShortcut {

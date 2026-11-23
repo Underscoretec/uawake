@@ -32,6 +32,7 @@ struct URLCommandTests {
         ("uawake://deactivate", .deactivate),
         ("uawake://toggle", .toggle),
         ("UAWAKE://Toggle", .toggle),
+        ("uawake://lock", .lock),
     ])
     func validURLs(url: String, expected: URLCommand) throws {
         #expect(try parse(url) == expected)
@@ -43,6 +44,7 @@ struct URLCommandTests {
         ("uawake://activate/extra", .unknownCommand("activate/extra")),
         ("uawake://activate?disk=1", .unknownParameter("disk")),
         ("uawake://toggle?duration=1h", .unknownParameter("duration")),
+        ("uawake://lock?now=1", .unknownParameter("now")),
         ("uawake://activate?duration=1h&until=18:30", .conflictingParameters),
         ("uawake://activate?duration=1h&duration=2h", .conflictingParameters),
         ("uawake://activate?duration=0", .invalidValue(parameter: "duration", value: "0")),

@@ -27,6 +27,10 @@ public final class DefaultSessionEngine: SessionEngine {
     /// True while any session holds its on-power `PreventSystemSleep` assertion.
     public private(set) var isPreventingAllSleep = false
 
+    /// True between ``SessionLifecycleEvent/screenDidLock`` and ``SessionLifecycleEvent/screenDidUnlock``.
+    /// While true no session holds a display assertion; the system ones stay.
+    public private(set) var isScreenLocked = false
+
     /// The last state passed to ``apply(_:)``; `nil` until the first one.
     public private(set) var deviceState: DeviceState?
 
@@ -75,7 +79,8 @@ public final class DefaultSessionEngine: SessionEngine {
         )
         session.deadline = ownDeadline(for: session.endCondition, from: now) ?? capDeadline(for: session)
         if let cause = immediateEnd(of: session) { throw .wouldEndImmediately(cause) }
-        handles[session.id] = try assertions.acquire(modes: session.modes, reason: session.reason.englishDescription)
+        handles[session.id] = try assertions.acquire(
+            modes: heldModes(session), reason: session.reason.englishDescription)
         sessions.append(session)
         if !Self.isWarnable(session) || isTooShortToWarn(session, from: now) { warned.insert(session.id) }
         logger.info("Started \(session.reason.englishDescription, privacy: .public)")
@@ -142,7 +147,7 @@ public final class DefaultSessionEngine: SessionEngine {
         let index = try index(of: id)
         guard case .paused(let remaining) = sessions[index].state else { throw .invalidState }
         let session = sessions[index]
-        handles[id] = try assertions.acquire(modes: session.modes, reason: session.reason.englishDescription)
+        handles[id] = try assertions.acquire(modes: heldModes(session), reason: session.reason.englishDescription)
         sessions[index].state = .active
         sessions[index].pausedDuration += sessions[index].pausedAt.map { clock.now.timeIntervalSince($0) } ?? 0
         sessions[index].pausedAt = nil
@@ -177,7 +182,37 @@ public final class DefaultSessionEngine: SessionEngine {
             break
         case .systemDidWake:
             tick()
+        case .screenDidLock:
+            setScreenLocked(true)
+        case .screenDidUnlock:
+            setScreenLocked(false)
         }
+    }
+
+    // MARK: Screen lock
+
+    /// The modes a session holds right now: all of them, minus the display while the screen is locked.
+    private func heldModes(_ session: Session) -> Set<AwakeMode> {
+        isScreenLocked ? session.modes.subtracting([.display]) : session.modes
+    }
+
+    /// Swaps each active session's assertions for the set that fits the lock state. The new
+    /// assertions are acquired before the old are released, so the Mac is never left unprotected;
+    /// a failed acquire keeps the old ones and is logged.
+    private func setScreenLocked(_ locked: Bool) {
+        guard locked != isScreenLocked else { return }
+        isScreenLocked = locked
+        for session in sessions where session.state == .active && session.modes.contains(.display) {
+            guard let old = handles[session.id] else { continue }
+            do throws(SessionEngineError) {
+                handles[session.id] = try assertions.acquire(
+                    modes: heldModes(session), reason: session.reason.englishDescription)
+                assertions.release(old)
+            } catch {
+                logger.warning("Display assertion change failed: \(String(describing: error), privacy: .public)")
+            }
+        }
+        logger.info("Screen \(locked ? "locked" : "unlocked", privacy: .public)")
     }
 
     public func events() -> AsyncStream<SessionEvent> {

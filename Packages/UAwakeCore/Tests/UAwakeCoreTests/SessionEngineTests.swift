@@ -329,6 +329,54 @@ struct SessionEngineTests {
         #expect(engine.sessions.isEmpty)
     }
 
+    // MARK: Screen lock
+
+    @Test func lockDropsOnlyTheDisplayAssertionAndUnlockRestoresIt() throws {
+        let session = try engine.start(request(.indefinite, modes: [.display]))
+        #expect(assertions.live.count == 2)
+        engine.handle(.screenDidLock)
+        #expect(engine.isScreenLocked)
+        #expect(assertions.live.count == 1)
+        #expect(engine.sessions.map(\.id) == [session.id] && engine.sessions[0].state == .active)
+        engine.handle(.screenDidUnlock)
+        #expect(!engine.isScreenLocked)
+        #expect(assertions.live.count == 2)
+    }
+
+    @Test func lockLeavesSystemOnlySessionsAlone() throws {
+        try engine.start(request(.indefinite))
+        let before = assertions.live
+        engine.handle(.screenDidLock)
+        #expect(assertions.live == before)
+    }
+
+    @Test func sessionStartedWhileLockedHoldsNoDisplayAssertion() throws {
+        engine.handle(.screenDidLock)
+        let session = try engine.start(request(.indefinite, modes: [.display]))
+        #expect(assertions.live.count == 1)
+        engine.handle(.screenDidUnlock)
+        #expect(assertions.live.count == 2)
+        engine.stop(session.id, cause: .stoppedByUser)
+        #expect(assertions.live.isEmpty)
+    }
+
+    @Test func repeatedLockEventsChangeNothing() throws {
+        try engine.start(request(.indefinite, modes: [.display]))
+        engine.handle(.screenDidLock)
+        engine.handle(.screenDidLock)
+        #expect(assertions.live.count == 1)
+        engine.handle(.screenDidUnlock)
+        engine.handle(.screenDidUnlock)
+        #expect(assertions.live.count == 2)
+    }
+
+    @Test func failedReacquireKeepsTheOldAssertions() throws {
+        try engine.start(request(.indefinite, modes: [.display]))
+        assertions.failure = -1
+        engine.handle(.screenDidLock)
+        #expect(assertions.live.count == 2)
+    }
+
     @Test func englishReasons() {
         #expect(
             SessionReason.standard(.manual, .duration(.seconds(5400))).englishDescription

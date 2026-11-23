@@ -22,7 +22,7 @@ struct MainWindowView: View {
                     row(.rules)
                 }
                 Section(String(localized: "Settings", comment: "Sidebar group")) {
-                    ForEach([MainSection.durations, .safety, .appearance, .general, .updates]) { row($0) }
+                    ForEach([MainSection.durations, .safety, .lockDim, .appearance, .general, .updates]) { row($0) }
                 }
                 Section {
                     row(.about)
@@ -56,6 +56,7 @@ struct MainWindowView: View {
             case .rules: RulesSectionView(model: model.rules)
             case .durations: DurationsSettingsView(settings: model.settings)
             case .safety: SafetySettingsView()
+            case .lockDim: LockDimSettingsView(model: model)
             case .appearance: AppearanceSettingsView(model: model)
             case .general: GeneralSettingsView(model: model)
             case .updates: UpdatesSettingsView(updates: model.updates)

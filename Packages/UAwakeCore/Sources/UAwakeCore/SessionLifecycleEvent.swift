@@ -10,4 +10,9 @@ public enum SessionLifecycleEvent: Equatable, Sendable {
     /// After wake the engine ends sessions whose deadline passed during sleep
     /// and re-arms its timer for the rest.
     case systemDidWake
+    /// The screen locked, however it was started (our button, ⌃⌘Q, the screen saver, the lid).
+    /// The engine releases the display assertion and keeps the system ones.
+    case screenDidLock
+    /// The screen unlocked; the engine takes the display assertion back.
+    case screenDidUnlock
 }

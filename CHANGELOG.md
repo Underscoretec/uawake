@@ -6,6 +6,29 @@ All notable changes to uawake are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0-alpha.8] - 2026-11-23
+
+Eighth internal alpha (version 1.0.0, build 8): lock and dim. Unsigned. Design and spike results:
+`docs/LOCK-DIM-DESIGN.md`, `docs/SANDBOX-SPIKE.md`.
+
+### Added
+- **Lock now**: a popover button, an optional global shortcut (Lock & dim settings) and
+  `uawake://lock`. It turns the display off (`pmset displaysleepnow`, screen saver as fallback);
+  the session keeps running. If your Mac isn't set to ask for a password, or only after a long
+  delay, the button reads "Screen off (no password required)" and links to System Settings › Lock
+  Screen; uawake never says "lock" when it can't lock.
+- **Auto-lock**: lock after 1–120 idle minutes while a session is active (off by default).
+- **Dim when idle**: darken every display (20–90 %) after 1–120 idle minutes during a session (off
+  by default). Any input removes it at once. Hidden from screen sharing, screenshots and
+  recordings; the watermark can stay above it; skipped while another app keeps the display awake.
+- Settings keys `LockShortcutKeyCode`, `LockShortcutModifiers`, `AutoLockEnabled`,
+  `AutoLockMinutes`, `DimEnabled`, `DimMinutes`, `DimDarkness`, `DimKeepsWatermark`,
+  `DimSkipsWhenPlaying` (docs/SETTINGS.md).
+
+### Changed
+- While the screen is locked, however it was locked, sessions drop their display assertion and keep
+  the system (and on-power) ones; the display assertion returns on unlock.
+
 ## [1.0.0-alpha.7] - 2026-11-23
 
 Seventh internal alpha (version 1.0.0, build 7): automatic updates. The first build that can

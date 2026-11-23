@@ -17,11 +17,14 @@ final class AppModel {
     let notifications: NotificationController
     let hotKey = HotKeyController(id: 1)
     let watermarkHotKey = HotKeyController(id: 2)
+    let lockHotKey = HotKeyController(id: 3)
+    let lockDim: LockDimModel
     let updates: UpdatesModel
     let rules: RulesModel
     /// Why the current shortcut could not be registered, or `nil`.
     private(set) var shortcutProblem: String?
     private(set) var watermarkShortcutProblem: String?
+    private(set) var lockShortcutProblem: String?
 
     /// `settingsSuite` keeps settings in a throwaway domain (cleared at launch), so UI tests
     /// and acceptance runs never touch real settings. `fixedDeviceState` replaces the real
@@ -31,7 +34,7 @@ final class AppModel {
     /// screenshot rules with scripted signals and no system monitors.
     init(
         settingsSuite: String? = nil, fixedDeviceState: DeviceState? = nil, rulesFile: String? = nil,
-        rulesFixture: Bool = false
+        rulesFixture: Bool = false, passwordRequirement: String? = nil
     ) {
         let defaults: UserDefaults
         if let settingsSuite, let testDefaults = UserDefaults(suiteName: settingsSuite) {
@@ -48,6 +51,17 @@ final class AppModel {
         popover = PopoverViewModel(engine: engine, settings: settings)
         notifications = NotificationController(engine: engine, settings: settings)
         updates = UpdatesModel(settings: settings)
+        // Isolated runs (UI tests, screenshots) never lock or sleep the real display.
+        lockDim =
+            settingsSuite == nil
+            ? LockDimModel(
+                engine: engine, settings: settings, idle: SystemIdleTimeProvider(),
+                displays: SystemDisplayAssertionProbe(), locker: SystemScreenLocker())
+            : LockDimModel(
+                engine: engine, settings: settings, idle: InertIdleTime(), displays: InertDisplayProbe(),
+                locker: InertScreenLocker(argument: passwordRequirement))
+        popover.lockDim = lockDim
+        lockDim.report = { [notifications] title, body in notifications.postNotice(title: title, body: body) }
 
         var rulesURL = RuleStore.defaultURL()
         if let rulesFile {
@@ -114,6 +128,7 @@ final class AppModel {
         }
         hotKey.onPress = { [weak self] in self?.popover.toggle() }
         watermarkHotKey.onPress = { settings.watermarkEnabled.toggle() }
+        lockHotKey.onPress = { [weak self] in self?.lockDim.lockNow() }
         registerShortcut()
     }
 
@@ -131,7 +146,8 @@ final class AppModel {
 
     func open(_ url: URL) {
         URLRouter.route(
-            url, to: engine, defaultCondition: settings.primaryClickAction, defaultModes: settings.sessionModes)
+            url, to: engine, defaultCondition: settings.primaryClickAction, defaultModes: settings.sessionModes,
+            lock: { [lockDim] in lockDim.lockNow() })
     }
 
     /// Ends every session with `.appQuit` so history (from 1.2) records why.
@@ -143,12 +159,15 @@ final class AppModel {
 
     private var registeredShortcut: GlobalShortcut?
     private var registeredWatermarkShortcut: GlobalShortcut?
+    private var registeredLockShortcut: GlobalShortcut?
 
     func registerShortcut() {
         register(settings.globalShortcut, on: hotKey, registered: &registeredShortcut, problem: &shortcutProblem)
         register(
             settings.watermarkShortcut, on: watermarkHotKey, registered: &registeredWatermarkShortcut,
             problem: &watermarkShortcutProblem)
+        register(
+            settings.lockShortcut, on: lockHotKey, registered: &registeredLockShortcut, problem: &lockShortcutProblem)
     }
 
     private func register(

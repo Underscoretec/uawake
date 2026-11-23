@@ -43,6 +43,7 @@ struct PopoverView: View {
             if model.showsSessionList {
                 SessionList(model: model, now: now)
             }
+            if let lockDim = model.lockDim { LockRowView(lockDim: lockDim) }
             RulesStripView(model: model, now: now)
             StatusStrip(chips: model.statusChips)
         }
@@ -430,5 +431,37 @@ struct FooterView: View {
                     .keyboardShortcut("q")
             }
         }
+    }
+}
+
+/// "Lock now" under the quick start, with what the password setting means for it and the armed
+/// dim and auto-lock times.
+struct LockRowView: View {
+    let lockDim: LockDimModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                lockDim.lockNow()
+            } label: {
+                Label(lockDim.buttonTitle, systemImage: lockDim.buttonSymbol).frame(maxWidth: .infinity)
+            }
+            .buttonStyle(PillButtonStyle())
+            .disabled(lockDim.isLocking)
+            .accessibilityIdentifier("PopoverLockNow")
+            if let caption = lockDim.caption {
+                Text(caption).font(.caption).foregroundStyle(Color.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+                if lockDim.requirement.isKnownNotToLock {
+                    Button("Open Lock Screen settings") { lockDim.openLockScreenSettings() }
+                        .buttonStyle(.link).font(.caption)
+                }
+            }
+            if let status = lockDim.statusText {
+                Label(status, systemImage: "moon.stars").font(.caption).foregroundStyle(Color.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .task { await lockDim.refreshRequirement() }
     }
 }

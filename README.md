@@ -84,6 +84,7 @@ Spotlight: it shows its window.
 | `uawake://activate?display=1&reason=Render` | Also keep the display awake; name the session |
 | `uawake://deactivate` | Stop all manual and URL sessions |
 | `uawake://toggle` | Stop manual and URL sessions if any run, otherwise start the default session |
+| `uawake://lock` | Turn the display off and lock the screen (if your Mac asks for a password); sessions keep running |
 
 From Terminal: `open "uawake://activate?duration=2h&reason=Build"`. Invalid URLs change nothing.
 

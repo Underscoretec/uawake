@@ -202,6 +202,95 @@ struct SafetySettingsView: View {
     }
 }
 
+struct LockDimSettingsView: View {
+    let model: AppModel
+    @AppStorage(SettingsKey.autoLockEnabled.rawValue) private var autoLock = false
+    @AppStorage(SettingsKey.autoLockMinutes.rawValue) private var autoLockMinutes = 10
+    @AppStorage(SettingsKey.dimEnabled.rawValue) private var dim = false
+    @AppStorage(SettingsKey.dimMinutes.rawValue) private var dimMinutes = 5
+    @AppStorage(SettingsKey.dimDarkness.rawValue) private var darkness = 60
+    @AppStorage(SettingsKey.dimKeepsWatermark.rawValue) private var keepsWatermark = true
+    @AppStorage(SettingsKey.dimSkipsWhenPlaying.rawValue) private var skipsWhenPlaying = true
+    @State private var shortcut: GlobalShortcut?
+    @State private var shortcutProblem: String?
+
+    var body: some View {
+        let lockDim = model.lockDim
+        Form {
+            Section {
+                Button {
+                    lockDim.lockNow()
+                } label: {
+                    Label(lockDim.buttonTitle, systemImage: lockDim.buttonSymbol)
+                }
+                .disabled(lockDim.isLocking)
+                .accessibilityIdentifier("SettingsLockNow")
+                caption(lockDim.caption, lockDim)
+                LabeledContent("Shortcut") {
+                    VStack(alignment: .trailing) {
+                        ShortcutRecorder(shortcut: $shortcut)
+                        if let shortcutProblem {
+                            Text(shortcutProblem).font(.caption).foregroundStyle(.red)
+                        }
+                    }
+                }
+                .onChange(of: shortcut) { _, new in shortcutProblem = model.setLockShortcut(new) }
+            } header: {
+                Text("Lock now")
+            } footer: {
+                Text("Turns the screen off and locks it. Sessions keep running. Also: uawake://lock.")
+            }
+            Section {
+                Toggle("Lock when idle during a session", isOn: $autoLock)
+                Stepper(value: $autoLockMinutes, in: 1...120) {
+                    Text("After \(autoLockMinutes) min without input")
+                }
+                .disabled(!autoLock)
+                caption(lockDim.autoLockCaption, lockDim)
+            } header: {
+                Text("Auto-lock")
+            } footer: {
+                Text("Only while a session is active. Off by default.")
+            }
+            Section {
+                Toggle("Dim the screen when idle during a session", isOn: $dim)
+                Group {
+                    Stepper(value: $dimMinutes, in: 1...120) {
+                        Text("After \(dimMinutes) min without input")
+                    }
+                    LabeledContent("Darkness: \(darkness)%") {
+                        Slider(
+                            value: Binding(get: { Double(darkness) }, set: { darkness = Int($0.rounded()) }),
+                            in: 20...90, step: 5)
+                    }
+                    Toggle("Keep the watermark visible above the dim", isOn: $keepsWatermark)
+                    Toggle("Don't dim while another app keeps the display awake", isOn: $skipsWhenPlaying)
+                }
+                .disabled(!dim)
+            } header: {
+                Text("Dim")
+            } footer: {
+                Text(
+                    "Any key, click or mouse move removes the dim at once. It never appears in screen sharing, screenshots or recordings. With auto-lock on, the dim comes at least a minute before the lock."
+                )
+            }
+        }
+        .formStyle(.grouped)
+        .onAppear { shortcut = model.settings.lockShortcut }
+        .task { await lockDim.refreshRequirement() }
+    }
+
+    @ViewBuilder
+    private func caption(_ text: String?, _ lockDim: LockDimModel) -> some View {
+        if let text {
+            Text(text).font(.caption).foregroundStyle(Color.secondaryText)
+            if lockDim.requirement.isKnownNotToLock {
+                Button("Open Lock Screen settings") { lockDim.openLockScreenSettings() }.buttonStyle(.link)
+            }
+        }
+    }
+}
+
 struct AppearanceSettingsView: View {
     let model: AppModel
     @AppStorage(SettingsKey.iconStyle.rawValue) private var iconStyle = IconStyle.uawake.rawValue

@@ -73,6 +73,14 @@ final class NotificationController: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
+    /// A one-off notice (a lock that could not be started or confirmed).
+    func postNotice(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        post(content, id: "notice-\(UUID().uuidString)")
+    }
+
     private func post(_ content: UNMutableNotificationContent, id: String) {
         center.add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
     }

@@ -1,6 +1,6 @@
 # Lock & dim design (1.0.0-alpha.8)
 
-Status: **draft for approval, no feature code yet.** Evidence: `docs/SANDBOX-SPIKE.md` (rows marked alpha.8).
+Status: **approved and built in 1.0.0-alpha.8** (decisions below as approved, 23 Nov 2026; see "As built"). Evidence: `docs/SANDBOX-SPIKE.md` (rows marked alpha.8).
 
 ## What it is
 Stay awake without leaving the Mac open to anyone walking past. Three independent, opt-in pieces:
@@ -117,3 +117,14 @@ Tests: engine drops/restores only the display assertion on lock/unlock (`FakeAss
 
 ## Before building: remaining spike checks
 Capture exclusion in a QuickTime recording, second display, other Spaces and over a full-screen app, `dimRemoval` latency, display idle-sleep after display-assertion release, and lock with delay 5 min / Never. Then `make probe` rerun, and the alpha.8 build ships through `make release` and the Sparkle feed (`beta` channel).
+
+## As built (alpha.8)
+Approved answers: `pmset displaysleepnow` first, screen saver as fallback; dim always hidden from capture; skip dimming while another app holds a display assertion (default on); drop the display assertion on any lock; ship the honest-wording table, with the change below.
+
+- **Wording when no password is asked** (setting reads "off", or a delay over 60 s): the button reads **Screen off (no password required)** with a link to System Settings › Lock Screen, and auto-lock shows the same warning. "Lock" appears only when the delay is immediate or up to 60 s. Unreadable setting: "Lock now" with the caption "uawake can't tell whether your Mac asks for a password."
+- **Unlock** is the `screenIsUnlocked` notification (system monitor → `SessionLifecycleEvent.screenDidUnlock`), not the session flag.
+- **Popover status** is the configured times ("Dims after 5 min idle · Locks after 10 min idle"), not a live countdown: the popover is only open while the user is giving input, so idle time there is always about 0.
+- **Dim level**: 100 (just under pop-up menus, over the menu bar); with "keep the watermark" the watermark windows rise to 101 while the dim shows, otherwise stay below it.
+- Past the lock time the dim does not show (the lock is on its way). Lock is confirmed by `screenIsLocked`; unconfirmed after 3 s (plus the password delay, up to a minute) gives a notification. Not asked when the setting says no password is needed.
+- Not built: `AutoLockMaxMinutes` and role presets (1.3), CLI `uawake lock` (1.1).
+- Runs with an isolated settings suite (UI tests, headless) use an inert locker that never touches the display; `-UITestPasswordRequirement immediate|never|delay:300|unknown` picks the reading, `-UITestLockSection` opens Lock & dim.

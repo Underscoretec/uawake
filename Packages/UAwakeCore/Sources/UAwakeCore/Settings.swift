@@ -41,6 +41,13 @@ public struct UAwakeSettings {
             SettingsKey.watermarkHiddenFromCapture.rawValue: true,
             SettingsKey.watermarkHiddenInFullScreen.rawValue: true,
             SettingsKey.watermarkDrifts.rawValue: true,
+            SettingsKey.autoLockEnabled.rawValue: false,
+            SettingsKey.autoLockMinutes.rawValue: 10,
+            SettingsKey.dimEnabled.rawValue: false,
+            SettingsKey.dimMinutes.rawValue: 5,
+            SettingsKey.dimDarkness.rawValue: 60,
+            SettingsKey.dimKeepsWatermark.rawValue: true,
+            SettingsKey.dimSkipsWhenPlaying.rawValue: true,
         ])
     }
 
@@ -182,6 +189,70 @@ public struct UAwakeSettings {
     public var watermarkShortcut: GlobalShortcut? {
         get { shortcut(.watermarkShortcutKeyCode, .watermarkShortcutModifiers) }
         nonmutating set { setShortcut(newValue, .watermarkShortcutKeyCode, .watermarkShortcutModifiers) }
+    }
+
+    /// Locks the screen. `nil` when not set (the default).
+    public var lockShortcut: GlobalShortcut? {
+        get { shortcut(.lockShortcutKeyCode, .lockShortcutModifiers) }
+        nonmutating set { setShortcut(newValue, .lockShortcutKeyCode, .lockShortcutModifiers) }
+    }
+
+    // MARK: Lock and dim
+
+    /// Lock after the Mac has been idle for ``autoLockMinutes`` during a session. Off by default.
+    public var autoLockEnabled: Bool {
+        get { bool(.autoLockEnabled, default: false) }
+        nonmutating set { set(newValue, .autoLockEnabled) }
+    }
+
+    /// 1–120.
+    public var autoLockMinutes: Int {
+        get { int(.autoLockMinutes, default: 10, in: 1...120) }
+        nonmutating set { set(newValue.clamped(to: 1...120), .autoLockMinutes) }
+    }
+
+    /// Dim the screen after ``dimMinutes`` idle during a session. Off by default.
+    public var dimEnabled: Bool {
+        get { bool(.dimEnabled, default: false) }
+        nonmutating set { set(newValue, .dimEnabled) }
+    }
+
+    /// 1–120.
+    public var dimMinutes: Int {
+        get { int(.dimMinutes, default: 5, in: 1...120) }
+        nonmutating set { set(newValue.clamped(to: 1...120), .dimMinutes) }
+    }
+
+    /// 20–90 %.
+    public var dimDarkness: Int {
+        get { int(.dimDarkness, default: 60, in: 20...90) }
+        nonmutating set { set(newValue.clamped(to: 20...90), .dimDarkness) }
+    }
+
+    /// The watermark stays above the dim. On by default.
+    public var dimKeepsWatermark: Bool {
+        get { bool(.dimKeepsWatermark, default: true) }
+        nonmutating set { set(newValue, .dimKeepsWatermark) }
+    }
+
+    /// No dim while another app holds a display-sleep assertion. On by default.
+    public var dimSkipsWhenPlaying: Bool {
+        get { bool(.dimSkipsWhenPlaying, default: true) }
+        nonmutating set { set(newValue, .dimSkipsWhenPlaying) }
+    }
+
+    /// The settings as the tracker reads them. The dim is kept at least a minute before the
+    /// lock: with auto-lock on, a dim at or after the lock time is shortened, or dropped if
+    /// there is no room (auto-lock at 1 minute).
+    public var lockDimConfig: LockDimConfig {
+        let lock = autoLockEnabled ? autoLockMinutes : nil
+        var dim: Int? = dimEnabled ? dimMinutes : nil
+        if let lock, let current = dim, current >= lock { dim = lock - 1 }
+        if let current = dim, current < 1 { dim = nil }
+        return LockDimConfig(
+            autoLock: lock.map { TimeInterval($0 * 60) }, dim: dim.map { TimeInterval($0 * 60) },
+            darkness: Double(dimDarkness) / 100, keepsWatermark: dimKeepsWatermark,
+            skipsWhenPlaying: dimSkipsWhenPlaying)
     }
 
     private func shortcut(_ keyCodeKey: SettingsKey, _ modifiersKey: SettingsKey) -> GlobalShortcut? {
@@ -380,6 +451,15 @@ public enum SettingsKey: String, CaseIterable, Sendable {
     case watermarkShortcutKeyCode = "WatermarkShortcutKeyCode"
     case watermarkShortcutModifiers = "WatermarkShortcutModifiers"
     case menuBarHighlight = "MenuBarHighlight"
+    case lockShortcutKeyCode = "LockShortcutKeyCode"
+    case lockShortcutModifiers = "LockShortcutModifiers"
+    case autoLockEnabled = "AutoLockEnabled"
+    case autoLockMinutes = "AutoLockMinutes"
+    case dimEnabled = "DimEnabled"
+    case dimMinutes = "DimMinutes"
+    case dimDarkness = "DimDarkness"
+    case dimKeepsWatermark = "DimKeepsWatermark"
+    case dimSkipsWhenPlaying = "DimSkipsWhenPlaying"
 }
 
 /// The on-screen watermark's layout: one large label (with drift), text tiled diagonally,
