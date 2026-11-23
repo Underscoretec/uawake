@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sparkle update feed, served by GitHub Pages from the gh-pages branch.
+     scripts/release.sh (make release) adds an item per release; newest first. -->
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>uawake</title>
+    <link>https://underscoretec.github.io/uawake/appcast.xml</link>
+    <description>uawake updates</description>
+    <language>en</language>
+  </channel>
+</rss>
