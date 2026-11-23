@@ -57,7 +57,7 @@ struct SettingsTests {
                 "FirstRunCompleted", "RulesPaused", "RulesPausedUntil", "PreventSleepOnPower", "AllowDisplaySleep",
                 "WatermarkEnabled", "WatermarkStyle", "WatermarkTextColour", "WatermarkTimerColour", "WatermarkOpacity",
                 "WatermarkSize", "WatermarkHiddenFromCapture", "WatermarkHiddenInFullScreen", "WatermarkDrifts",
-                "WatermarkShortcutKeyCode", "WatermarkShortcutModifiers",
+                "WatermarkShortcutKeyCode", "WatermarkShortcutModifiers", "MenuBarHighlight",
             ])
     }
 
@@ -121,6 +121,11 @@ struct SettingsTests {
         #expect(defaults.object(forKey: "GlobalShortcutKeyCode") == nil)
         defaults.set("rainbow", forKey: "IconStyle")
         #expect(settings.iconStyle == .uawake)
+        #expect(settings.menuBarHighlight == .capsule)
+        settings.menuBarHighlight = .colouredIcon
+        #expect(defaults.string(forKey: "MenuBarHighlight") == "colouredIcon")
+        defaults.set("glow", forKey: "MenuBarHighlight")
+        #expect(settings.menuBarHighlight == .capsule)
     }
 
     // MARK: Presets

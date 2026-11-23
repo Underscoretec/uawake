@@ -18,7 +18,7 @@ immediately.
 | `MaximumCapEnabled` | Boolean | `true` | | Cap indefinite and battery-level sessions |
 | `MaximumCapHours` | Integer | `24` | 1–72 | Cap length, counted from session start including paused time |
 | `DurationPresets` | Array of strings | `15m`, `30m`, `1h`, `2h`, `5h`, `indefinite` | Up to 12 unique entries | Popover preset chips, in order |
-| `PrimaryClickAction` | String | `indefinite` | A preset value | Session started by the primary click and `uawake://toggle` |
+| `PrimaryClickAction` | String | `indefinite` | A preset value | Session started by double-clicking the menu bar icon and `uawake://toggle` |
 | `EndWarningMinutes` | Integer | `5` | 0–60; 0 = off | Warning before a timed session ends |
 | `AllowDisplaySleep` | Boolean | `false` | | "Allow the display to sleep during sessions" (General, 1.0). Off: manual and URL sessions also hold `PreventUserIdleDisplaySleep`. A URL's `display=` overrides it; rules choose per rule |
 | `PreventSleepOnPower` | Boolean | `false` | | "On the power adapter, prevent all sleep" (General, 1.0). On AC power, non-rule sessions also hold `PreventSystemSleep` (`uawake: <reason> (on power)`), like `caffeinate -s`; dropped on battery. Rules have their own per-rule option. Closing the lid still sleeps the Mac without an external display |
@@ -36,6 +36,7 @@ immediately.
 | `WatermarkShortcutModifiers` | Integer | none | As `GlobalShortcutModifiers` | Its modifiers |
 | `UpdateChannel` | String | `stable` | `stable`, `beta` | Sparkle update feed (used once Sparkle is set up) |
 | `IconStyle` | String | `uawake` | `uawake`, `cup`, `eye`, `bolt` | Menu bar icon family |
+| `MenuBarHighlight` | String | `capsule` | `capsule`, `colouredIcon`, `none` | "Highlight when active" (Appearance, 1.0): a uawake-blue capsule behind the icon and countdown, the icon alone in colour, or no highlight. Amber near the end, red for 3 s when a guard stops a session |
 | `GlobalShortcutKeyCode` | Integer | none | macOS virtual key code | Global shortcut key; no shortcut unless both shortcut keys are set |
 | `GlobalShortcutModifiers` | Integer | none | Carbon modifier mask, at least one of ⌘ ⌥ ⌃ (`cmdKey` 256, `shiftKey` 512, `optionKey` 2048, `controlKey` 4096) | Global shortcut modifiers |
 | `FirstRunCompleted` | Boolean | `false` | | Set when the welcome window is dismissed; force `true` to skip first run |

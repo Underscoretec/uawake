@@ -43,12 +43,7 @@ final class AppModel {
         let settings = UAwakeSettings(defaults: defaults)
         self.settings = settings
         let clock = SystemClock()
-        let engine = DefaultSessionEngine(
-            assertions: IOKitAssertionProvider(),
-            clock: clock,
-            guards: DefaultSessionEngine.standardGuards
-        )
-        engine.apply(settings)  // Every setting the engine reads, as on each later change.
+        let engine = Self.makeEngine(settings: settings, assertions: IOKitAssertionProvider(), clock: clock)
         self.engine = engine
         popover = PopoverViewModel(engine: engine, settings: settings)
         notifications = NotificationController(engine: engine, settings: settings)
@@ -120,6 +115,18 @@ final class AppModel {
         hotKey.onPress = { [weak self] in self?.popover.toggle() }
         watermarkHotKey.onPress = { settings.watermarkEnabled.toggle() }
         registerShortcut()
+    }
+
+    /// The engine as launch creates it, with every setting it reads applied before the first
+    /// session, as on each later change. Tests pass fakes (alpha.4: "prevent all sleep" on power
+    /// took effect only after a setting changed).
+    static func makeEngine(
+        settings: UAwakeSettings, assertions: any AssertionProvider, clock: any SessionClock
+    ) -> DefaultSessionEngine {
+        let engine = DefaultSessionEngine(
+            assertions: assertions, clock: clock, guards: DefaultSessionEngine.standardGuards)
+        engine.apply(settings)
+        return engine
     }
 
     func open(_ url: URL) {

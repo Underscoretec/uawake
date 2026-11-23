@@ -83,6 +83,16 @@ extension IconStyle {
     }
 }
 
+extension MenuBarHighlight {
+    var localizedName: String {
+        switch self {
+        case .capsule: String(localized: "Capsule", comment: "Highlight when active: coloured capsule behind the icon")
+        case .colouredIcon: String(localized: "Coloured icon", comment: "Highlight when active: the icon in colour")
+        case .none: String(localized: "None", comment: "Highlight when active: no highlight")
+        }
+    }
+}
+
 extension PresetError {
     var localizedMessage: String {
         switch self {

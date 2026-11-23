@@ -30,6 +30,7 @@ public struct UAwakeSettings {
             SettingsKey.allowDisplaySleep.rawValue: false,
             SettingsKey.updateChannel.rawValue: UpdateChannel.stable.rawValue,
             SettingsKey.iconStyle.rawValue: IconStyle.uawake.rawValue,
+            SettingsKey.menuBarHighlight.rawValue: MenuBarHighlight.capsule.rawValue,
             SettingsKey.firstRunCompleted.rawValue: false,
             SettingsKey.watermarkEnabled.rawValue: false,
             SettingsKey.watermarkStyle.rawValue: WatermarkStyle.centred.rawValue,
@@ -161,6 +162,14 @@ public struct UAwakeSettings {
     public var iconStyle: IconStyle {
         get { defaults.string(forKey: SettingsKey.iconStyle.rawValue).flatMap(IconStyle.init) ?? .uawake }
         nonmutating set { set(newValue.rawValue, .iconStyle) }
+    }
+
+    /// How the menu bar icon stands out while a session runs.
+    public var menuBarHighlight: MenuBarHighlight {
+        get {
+            defaults.string(forKey: SettingsKey.menuBarHighlight.rawValue).flatMap(MenuBarHighlight.init) ?? .capsule
+        }
+        nonmutating set { set(newValue.rawValue, .menuBarHighlight) }
     }
 
     /// `nil` when no shortcut is set (the default).
@@ -370,6 +379,7 @@ public enum SettingsKey: String, CaseIterable, Sendable {
     case watermarkDrifts = "WatermarkDrifts"
     case watermarkShortcutKeyCode = "WatermarkShortcutKeyCode"
     case watermarkShortcutModifiers = "WatermarkShortcutModifiers"
+    case menuBarHighlight = "MenuBarHighlight"
 }
 
 /// The on-screen watermark's layout: one large label (with drift), text tiled diagonally,
@@ -386,6 +396,12 @@ public enum WatermarkSize: String, CaseIterable, Sendable {
 /// cup from the asset catalog, the others SF Symbols.
 public enum IconStyle: String, CaseIterable, Sendable {
     case uawake, cup, eye, bolt
+}
+
+/// "Highlight when active" (Appearance): a coloured capsule behind the icon and countdown,
+/// the icon alone in colour, or neither.
+public enum MenuBarHighlight: String, CaseIterable, Sendable {
+    case capsule, colouredIcon, none
 }
 
 /// A global shortcut as a virtual key code and a Carbon modifier mask

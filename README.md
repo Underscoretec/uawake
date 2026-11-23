@@ -4,9 +4,9 @@
 
 **uawake — keep your Mac awake.**
 
-A free, open-source macOS menu bar app by Underscore Technology. Click once to keep your Mac
-awake, for as long as you need, or let rules do it for you: while you present, are on a call,
-build or download. uawake tells you what is keeping it awake and why. Safety
+A free, open-source macOS menu bar app by Underscore Technology. Double-click its menu bar icon
+to keep your Mac awake, for as long as you need (click once for durations and sessions), or let
+rules do it for you: while you present, are on a call, build or download. uawake tells you what is keeping it awake and why. Safety
 guards stop sessions at low battery, in Low Power Mode, when your Mac gets too warm, or after a
 maximum duration.
 

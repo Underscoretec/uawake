@@ -16,6 +16,13 @@ struct SignalHubTests {
         for _ in 0..<20 { await Task.yield() }
     }
 
+    /// Yields until `condition` holds, for at most 5 s: each monitor's stream reaches the hub
+    /// through its own task, so a fixed number of yields isn't always enough.
+    func wait(until condition: () -> Bool) async {
+        let deadline = ContinuousClock.now + .seconds(5)
+        while !condition() && ContinuousClock.now < deadline { await Task.yield() }
+    }
+
     /// One fake per monitor value type, each replayed through the hub exactly as the system one is.
     @Test func everyMonitorTypeIsForwardedAsItsSignal() async {
         let log = Log()
@@ -41,15 +48,18 @@ struct SignalHubTests {
                 .calendar: { SignalHub.stream(calendar) { .calendar($0) } },
             ], deliver: { log.signals.append($0) })
         hub.setNeeded(Set(SignalKind.allCases))
-        await settle()
+        let initial = Set(SignalKind.allCases).subtracting([.power, .load])
+        await wait { Set(log.signals.map(\.kind)) == initial }
         #expect(hub.running == Set(SignalKind.allCases).subtracting([.power]))
-        #expect(Set(log.signals.map(\.kind)) == Set(SignalKind.allCases).subtracting([.power, .load]))
+        #expect(Set(log.signals.map(\.kind)) == initial)
 
+        // Two independent streams: their signals may arrive in either order.
         let sample = LoadSample(cpuPercent: 40, bytesInPerSecond: 1, bytesOutPerSecond: 2, interval: 10)
         load.send(sample)
         wifi.send(nil)
-        await settle()
-        #expect(log.signals.suffix(2) == [.load(sample), .wifi(nil)])
+        let last2 = { Array(log.signals.suffix(2)) }
+        await wait { last2().contains(.load(sample)) && last2().contains(.wifi(nil)) }
+        #expect(last2().contains(.load(sample)) && last2().contains(.wifi(nil)))
     }
 
     @Test func monitorsExistOnlyWhileNeeded() async {

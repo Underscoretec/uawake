@@ -22,7 +22,7 @@ struct GeneralSettingsView: View {
                 .onChange(of: launchesAtLogin) { _, enabled in
                     if enabled != model.launchesAtLogin { model.setLaunchesAtLogin(enabled) }
                 }
-            Picker("Click the menu bar icon to keep awake for", selection: $primaryClickAction) {
+            Picker("Double-click the menu bar icon to keep awake for", selection: $primaryClickAction) {
                 ForEach(model.settings.presets, id: \.self) { preset in
                     Text(preset.chipTitle).tag(preset.presetText ?? "indefinite")
                 }
@@ -206,6 +206,7 @@ struct AppearanceSettingsView: View {
     let model: AppModel
     @AppStorage(SettingsKey.iconStyle.rawValue) private var iconStyle = IconStyle.uawake.rawValue
     @AppStorage(SettingsKey.showsCountdown.rawValue) private var showsCountdown = false
+    @AppStorage(SettingsKey.menuBarHighlight.rawValue) private var highlight = MenuBarHighlight.capsule.rawValue
     @AppStorage(SettingsKey.watermarkEnabled.rawValue) private var watermark = false
     @AppStorage(SettingsKey.watermarkStyle.rawValue) private var style = WatermarkStyle.centred.rawValue
     @AppStorage(SettingsKey.watermarkTextColour.rawValue) private var textColour = "blue"
@@ -234,6 +235,9 @@ struct AppearanceSettingsView: View {
                 }
                 .pickerStyle(.radioGroup)
                 Toggle("Show remaining time in the menu bar", isOn: $showsCountdown)
+                Picker("Highlight when active", selection: $highlight) {
+                    ForEach(MenuBarHighlight.allCases, id: \.self) { Text($0.localizedName).tag($0.rawValue) }
+                }
             }
             Section {
                 Toggle("Show watermark on screen", isOn: $watermark)

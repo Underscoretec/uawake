@@ -31,7 +31,7 @@ release immediately; `extend`, `pause`, `resume` adjust deadlines and assertions
 its deadline; sessions shorter than the lead time are not warned) and `ended` (carrying
 its cause). Notifications, the UI and, later, history consume it.
 
-- **Toggle** (menu bar primary click and `uawake://toggle`): only manual and URL
+- **Toggle** (menu bar double click and `uawake://toggle`): only manual and URL
   sessions count as "on". If any exist they are stopped; otherwise the default
   session starts. Rule and CLI sessions are never stopped or counted.
 - **Extend** works only on duration and until-time sessions; others throw

@@ -117,6 +117,11 @@ struct HeroView: View {
                 }
             }
             toggle
+            if !large {
+                Text("Tip: double-click the menu bar icon to start or stop.")
+                    .font(.caption).foregroundStyle(Color.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

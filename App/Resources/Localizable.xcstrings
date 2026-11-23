@@ -145,6 +145,9 @@
       "comment": "Banner title: start refused"
     },
     "Cancel": {},
+    "Capsule": {
+      "comment": "Highlight when active: coloured capsule behind the icon"
+    },
     "Centred": {},
     "Change duration": {},
     "Change to": {
@@ -156,13 +159,11 @@
     "Choose an App": {},
     "Clear": {},
     "Clear shortcut": {},
-    "Click the icon to turn uawake on or off. Option-click or right-click it for durations and settings.": {},
-    "Click the menu bar icon to keep awake for": {},
-    "Click to turn uawake on or off. Option-click or right-click for options.": {
-      "comment": "VoiceOver help for the menu bar icon"
-    },
     "Close Window": {
       "comment": "Menu item"
+    },
+    "Coloured icon": {
+      "comment": "Highlight when active: the icon in colour"
     },
     "Conditions": {},
     "Conditions now": {},
@@ -202,6 +203,11 @@
       "comment": "Rule summary"
     },
     "Done": {},
+    "Double-click the icon to turn uawake on or off. Click it once for durations, sessions and settings.": {},
+    "Double-click the menu bar icon to keep awake for": {},
+    "Double-click to turn uawake on or off. Click for options.": {
+      "comment": "VoiceOver help for the menu bar icon"
+    },
     "Download": {},
     "Downloading": {
       "comment": "Rule template name"
@@ -279,6 +285,7 @@
     },
     "Hide from screen sharing, screenshots and recordings": {},
     "Hide while presenting or when a full-screen app is in front": {},
+    "Highlight when active": {},
     "How uawake keeps itself up to date.": {
       "comment": "Main window section subtitle"
     },
@@ -401,6 +408,9 @@
     "No rules yet. Start from one of these, or choose New Rule.": {},
     "No sleep on power": {
       "comment": "Status chip"
+    },
+    "None": {
+      "comment": "Highlight when active: no highlight"
     },
     "None chosen": {},
     "None right now": {
@@ -676,6 +686,7 @@
     },
     "Tiled": {},
     "Timer colour": {},
+    "Tip: double-click the menu bar icon to start or stop.": {},
     "Title contains (optional)": {},
     "True now": {
       "comment": "Test view"

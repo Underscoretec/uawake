@@ -53,7 +53,7 @@ struct WelcomeView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Find uawake in the menu bar").font(.headline)
                     Text(
-                        "Click the icon to turn uawake on or off. Option-click or right-click it for durations and settings."
+                        "Double-click the icon to turn uawake on or off. Click it once for durations, sessions and settings."
                     )
                     .fixedSize(horizontal: false, vertical: true)
                 }

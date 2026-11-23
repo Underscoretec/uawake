@@ -2,8 +2,8 @@ import AppKit
 import SwiftUI
 import UAwakeCore
 
-/// The menu bar item. Primary click toggles the default session; secondary click,
-/// Control-click or Option-click opens the popover.
+/// The menu bar item. A double click toggles the default session; a single click,
+/// secondary click, Control-click or Option-click opens the popover.
 @MainActor
 final class StatusItemController: NSObject, NSPopoverDelegate {
     private let model: AppModel
@@ -12,14 +12,22 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     /// Space below the anchor for the popover, set each time it opens.
     private var availableHeight = CGFloat.greatestFiniteMagnitude
     private var ticker: Timer?
+    /// Opens the popover once a single click can no longer become a double click.
+    private var pendingPopover: Timer?
+    private var clicks = ClickSequence(interval: NSEvent.doubleClickInterval)
+    /// System uptime when the popover last closed: a transient popover closes on the mouse-down
+    /// of the very click that was meant to close it.
+    private var popoverClosedAt: TimeInterval = -.infinity
     /// The countdown text last drawn in the menu bar, and when (acceptance sampling).
     private(set) var lastCountdown: String?
     private(set) var lastRendered: Date?
 
-    private struct Appearance: Equatable {
-        let style: IconStyle
-        let active: Bool
-        let countdown: String?
+    struct Appearance: Equatable {
+        var style: IconStyle
+        var highlight: MenuBarHighlight
+        var tone: PopoverViewModel.MenuBarTone
+        var countdown: String?
+        var increasedContrast = false
     }
 
     /// What the button shows now; redraws only when this changes.
@@ -40,9 +48,12 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             button.action = #selector(clicked)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.imagePosition = .imageOnly
+            // No press highlight: a click must change nothing on screen until the double-click
+            // interval has passed. The icon highlights only while the popover is open.
+            (button.cell as? NSButtonCell)?.highlightsBy = []
             button.setAccessibilityHelp(
                 String(
-                    localized: "Click to turn uawake on or off. Option-click or right-click for options.",
+                    localized: "Double-click to turn uawake on or off. Click for options.",
                     comment: "VoiceOver help for the menu bar icon"))
         }
         model.popover.showPopover = { [weak self] in self?.showPopover() }
@@ -53,17 +64,52 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
                 self?.update()
             }
         }
+        Task { [weak self] in
+            let center = NSWorkspace.shared.notificationCenter
+            for await _ in center.notifications(named: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification) {
+                self?.update()
+            }
+        }
+    }
+
+    /// Right-, Option- or Control-click opens the popover at once.
+    static func wantsMenu(_ type: NSEvent.EventType, modifiers: NSEvent.ModifierFlags) -> Bool {
+        type == .rightMouseUp || !modifiers.isDisjoint(with: [.option, .control])
     }
 
     @objc private func clicked() {
-        let event = NSApplication.shared.currentEvent
-        let wantsMenu =
-            event?.type == .rightMouseUp || event?.modifierFlags.contains(.option) == true
-            || event?.modifierFlags.contains(.control) == true
-        if wantsMenu || popover.isShown {
+        guard let event = NSApplication.shared.currentEvent else { return }
+        if Self.wantsMenu(event.type, modifiers: event.modifierFlags) {
+            pendingPopover?.invalidate()
+            pendingPopover = nil
             togglePopover()
-        } else {
+            return
+        }
+        clicks.interval = NSEvent.doubleClickInterval
+        switch clicks.click(at: event.timestamp) {
+        case .double:
+            pendingPopover?.invalidate()
+            pendingPopover = nil
             model.popover.toggle()
+        case .single where popover.isShown || event.timestamp - popoverClosedAt < clicks.interval:
+            popover.performClose(nil)
+        case .single:
+            let timer = Timer(timeInterval: clicks.interval, repeats: false) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.pendingPopover = nil
+                    // A button still down is a second click on its way: its mouse-up decides.
+                    if NSEvent.pressedMouseButtons & 1 == 0 {
+                        self.showPopover()
+                    } else {
+                        self.clicks.awaitSecondClick()
+                    }
+                }
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            pendingPopover = timer
+        case .ignored:
+            break
         }
     }
 
@@ -90,6 +136,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         // A transient popover closes on outside clicks, app switches and Esc only while uawake is active.
         NSApplication.shared.activate()
         popover.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
+        button.highlight(true)
         popover.contentViewController?.view.window?.makeKey()
     }
 
@@ -111,6 +158,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     }
 
     func popoverDidClose(_ notification: Notification) {
+        popoverClosedAt = ProcessInfo.processInfo.systemUptime
+        statusItem.button?.highlight(false)
         model.popover.clearRefusal()
     }
 
@@ -127,26 +176,34 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     private func update() {
         guard let button = statusItem.button else { return }
         let viewModel = model.popover
-        let active = viewModel.isAwake
         let now = Date()
-        let remaining = model.settings.showsCountdown ? viewModel.countdownRemaining(now: now) : nil
-        let countdown = remaining.map(PopoverViewModel.menuBarText)
-        let appearance = Appearance(style: model.settings.iconStyle, active: active, countdown: countdown)
+        let appearance = Appearance(
+            style: model.settings.iconStyle, highlight: model.settings.menuBarHighlight,
+            tone: viewModel.menuBarTone(now: now),
+            countdown: model.settings.showsCountdown ? viewModel.menuBarCountdown(now: now) : nil,
+            increasedContrast: NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast)
         if appearance != drawn {
-            button.image = Self.statusImage(style: appearance.style, active: active, countdown: countdown)
-            button.setAccessibilityLabel(viewModel.statusAccessibilityLabel(now: Date()))
+            let rendered = Self.render(appearance)
+            button.image = rendered.image
+            button.contentTintColor = rendered.tint
+            button.appearsDisabled = rendered.dimmed
+            button.setAccessibilityLabel(viewModel.statusAccessibilityLabel(now: now))
             drawn = appearance
         }
-        lastCountdown = countdown
-        lastRendered = Date()
+        lastCountdown = appearance.countdown
+        lastRendered = now
 
-        // One-shot timer for the moment the text next changes: once a minute, then every
-        // second in the final minute.
+        // One-shot timer for the next change: the countdown text (once a minute, then every
+        // second in the final minute), the warning window or the end of a guard flash.
         ticker?.invalidate()
         ticker = nil
-        if let remaining {
-            let delay = PopoverViewModel.secondsUntilMenuBarChange(remaining) + 0.02
-            let timer = Timer(timeInterval: delay, repeats: false) { [weak self] _ in
+        let delays = [
+            appearance.countdown == nil
+                ? nil : viewModel.countdownRemaining(now: now).map(PopoverViewModel.secondsUntilMenuBarChange),
+            viewModel.secondsUntilToneChange(now: now),
+        ]
+        if let delay = delays.compactMap({ $0 }).min() {
+            let timer = Timer(timeInterval: delay + 0.02, repeats: false) { [weak self] _ in
                 MainActor.assumeIsolated { self?.update() }
             }
             timer.tolerance = 0.05
@@ -155,44 +212,114 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         }
     }
 
-    /// The icon alone when idle (or the countdown is off); icon plus time left in a
-    /// compact pill while a timed session runs. A template image, so the menu bar tints it
-    /// for light, dark and wallpaper-tinted bars.
-    static func statusImage(style: IconStyle, active: Bool, countdown: String?) -> NSImage {
-        let symbol = symbolImage(style: style, active: active)
-        guard let countdown else { return symbol }
-        let text = NSAttributedString(string: countdown, attributes: pillTextAttributes)
-        let textSize = text.size()
-        let height: CGFloat = 18
+    /// The button's image, tint and dimming. Idle: the dimmed template icon. Active with
+    /// the capsule: white (black on amber) icon and countdown in a uawake-blue, amber or red
+    /// capsule. Otherwise a template image the menu bar tints for light and dark bars,
+    /// coloured by `contentTintColor` with "Coloured icon".
+    static func render(_ appearance: Appearance) -> (image: NSImage, tint: NSColor?, dimmed: Bool) {
+        var tone = appearance.tone
+        if appearance.highlight == .none && tone == .stopped { tone = .idle }
+        let symbol = symbolImage(style: appearance.style, active: tone == .awake || tone == .endingSoon)
+        let countdown = tone == .idle || tone == .stopped ? nil : appearance.countdown
+        switch (tone, appearance.highlight) {
+        case (.idle, _):
+            return (symbol, nil, true)
+        case (_, .capsule):
+            let (fill, content) = capsuleColours(tone, increasedContrast: appearance.increasedContrast)
+            return (capsule(symbol, countdown: countdown, fill: fill, content: content), nil, false)
+        case (_, .colouredIcon):
+            let tint: NSColor =
+                switch tone {
+                case .endingSoon: .systemOrange
+                case .stopped: .systemRed
+                default: .systemBlue
+                }
+            return (plain(symbol, countdown: countdown), tint, false)
+        case (_, .none):
+            return (plain(symbol, countdown: countdown), nil, false)
+        }
+    }
+
+    /// Fill and content colours, white on blue and red (≥ 4.5:1), near-black on amber.
+    /// Increase Contrast darkens the blue and red.
+    static func capsuleColours(
+        _ tone: PopoverViewModel.MenuBarTone, increasedContrast: Bool
+    ) -> (fill: NSColor, content: NSColor) {
+        func rgb(_ hex: UInt32) -> NSColor {
+            NSColor(
+                srgbRed: CGFloat(hex >> 16 & 0xFF) / 255, green: CGFloat(hex >> 8 & 0xFF) / 255,
+                blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+        }
+        switch tone {
+        case .endingSoon: return (rgb(0xFFB340), rgb(0x1D1D1F))
+        case .stopped: return (rgb(increasedContrast ? 0xB42318 : 0xD92D20), .white)
+        default: return (rgb(increasedContrast ? 0x0A5BC4 : 0x1F6FE5), .white)
+        }
+    }
+
+    private static let pillHeight: CGFloat = 18
+
+    /// The icon and countdown in a filled capsule. Not a template: the colours are its point.
+    static func capsule(_ symbol: NSImage, countdown: String?, fill: NSColor, content: NSColor) -> NSImage {
+        let height = pillHeight
         let symbolSize = NSSize(width: symbol.size.width * 0.86, height: symbol.size.height * 0.86)
-        let size = NSSize(width: 7 + symbolSize.width + 4 + ceil(textSize.width) + 8, height: height)
-        // Drawn once into a 2x bitmap. A drawing-handler image would re-run this code every
-        // time the menu bar draws the item, which cost ~0.9% CPU with a 1 s countdown.
-        let scale: CGFloat = 2
+        let text = countdown.map { NSAttributedString(string: $0, attributes: textAttributes(content)) }
+        let textWidth = text.map { 4 + ceil($0.size().width) + 1 } ?? 0
+        let size = NSSize(width: 7 + symbolSize.width + textWidth + 7, height: height)
+        let glyph = NSImage(size: symbol.size, flipped: false) { rect in
+            symbol.draw(in: rect)
+            content.set()
+            rect.fill(using: .sourceAtop)
+            return true
+        }
+        return rasterize(size, template: false) {
+            fill.setFill()
+            NSBezierPath(roundedRect: NSRect(origin: .zero, size: size), xRadius: height / 2, yRadius: height / 2)
+                .fill()
+            glyph.draw(
+                in: NSRect(
+                    x: 7, y: (height - symbolSize.height) / 2, width: symbolSize.width, height: symbolSize.height))
+            if let text {
+                text.draw(at: NSPoint(x: 7 + symbolSize.width + 4, y: (height - text.size().height) / 2))
+            }
+        }
+    }
+
+    /// The icon, and the countdown beside it, as one template image.
+    static func plain(_ symbol: NSImage, countdown: String?) -> NSImage {
+        guard let countdown else { return symbol }
+        let text = NSAttributedString(string: countdown, attributes: textAttributes(.black))
+        let size = NSSize(width: symbol.size.width + 4 + ceil(text.size().width), height: max(symbol.size.height, 18))
+        return rasterize(size, template: true) {
+            symbol.draw(in: NSRect(origin: NSPoint(x: 0, y: (size.height - symbol.size.height) / 2), size: symbol.size))
+            text.draw(at: NSPoint(x: symbol.size.width + 4, y: (size.height - text.size().height) / 2))
+        }
+    }
+
+    private static func textAttributes(_ colour: NSColor) -> [NSAttributedString.Key: Any] {
+        [.font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold), .foregroundColor: colour]
+    }
+
+    /// Drawn once into a 2x bitmap. A drawing-handler image would re-run its code every time
+    /// the menu bar draws the item, which cost ~0.9% CPU with a 1 s countdown.
+    private static func rasterize(_ size: NSSize, template: Bool, draw: () -> Void) -> NSImage {
         guard
             let bitmap = NSBitmapImageRep(
-                bitmapDataPlanes: nil, pixelsWide: Int(ceil(size.width * scale)),
-                pixelsHigh: Int(ceil(size.height * scale)), bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
-                isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)
-        else { return symbol }
+                bitmapDataPlanes: nil, pixelsWide: Int(ceil(size.width * 2)), pixelsHigh: Int(ceil(size.height * 2)),
+                bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+                bytesPerRow: 0, bitsPerPixel: 0)
+        else { return NSImage() }
         bitmap.size = size
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
-        NSColor.black.withAlphaComponent(0.22).setFill()
-        NSBezierPath(roundedRect: NSRect(origin: .zero, size: size), xRadius: height / 2, yRadius: height / 2).fill()
-        symbol.draw(
-            in: NSRect(x: 7, y: (height - symbolSize.height) / 2, width: symbolSize.width, height: symbolSize.height))
-        text.draw(at: NSPoint(x: 7 + symbolSize.width + 4, y: (height - textSize.height) / 2))
+        draw()
         NSGraphicsContext.restoreGraphicsState()
         let image = NSImage(size: size)
         image.addRepresentation(bitmap)
-        image.isTemplate = true
+        image.isTemplate = template
         return image
     }
 
-    private static let pillTextAttributes: [NSAttributedString.Key: Any] = [
-        .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold), .foregroundColor: NSColor.black,
-    ]
     private static var symbolCache: [String: NSImage] = [:]
 
     /// The menu bar icon, rasterized once per style and state: drawing a vector image
@@ -212,21 +339,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             vector = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
                 .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 14, weight: .regular))
         }
-        guard
-            let vector,
-            let bitmap = NSBitmapImageRep(
-                bitmapDataPlanes: nil, pixelsWide: Int(ceil(vector.size.width * 2)),
-                pixelsHigh: Int(ceil(vector.size.height * 2)), bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
-                isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)
-        else { return NSImage() }
-        bitmap.size = vector.size
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
-        vector.draw(in: NSRect(origin: .zero, size: vector.size))
-        NSGraphicsContext.restoreGraphicsState()
-        let image = NSImage(size: vector.size)
-        image.addRepresentation(bitmap)
-        image.isTemplate = true
+        guard let vector else { return NSImage() }
+        let image = rasterize(vector.size, template: true) { vector.draw(in: NSRect(origin: .zero, size: vector.size)) }
         symbolCache[name] = image
         return image
     }
@@ -268,4 +382,33 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             crowd.append(item)
         }
     }
+}
+
+/// Tells single from double clicks on the menu bar icon by timing: macOS reports every click
+/// on a status item with a click count of 1. Times are event timestamps (system uptime).
+struct ClickSequence {
+    enum Kind: Equatable { case single, double, ignored }
+
+    var interval: TimeInterval
+    private var last = -TimeInterval.infinity
+    private var lastDouble = -TimeInterval.infinity
+    private var secondClickPending = false
+
+    init(interval: TimeInterval) { self.interval = interval }
+
+    mutating func click(at time: TimeInterval) -> Kind {
+        defer { last = time }
+        if time - lastDouble < interval { return .ignored }  // A third click.
+        // A held button counts for a second more, not for a click much later.
+        let held = secondClickPending && time - last < interval + 1
+        secondClickPending = false
+        if held || time - last < interval {
+            lastDouble = time
+            return .double
+        }
+        return .single
+    }
+
+    /// The interval ran out with the button held down: the next mouse-up completes a double click.
+    mutating func awaitSecondClick() { secondClickPending = true }
 }

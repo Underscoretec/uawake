@@ -247,26 +247,39 @@ struct LaunchOptions {
     }
 }
 
-/// The status item's pill drawn on light and dark menu-bar backgrounds.
+/// The status item idle, active and near its end, drawn as the menu bar draws it, in the
+/// app's appearance (the real menu bar follows the system and the wallpaper).
 private struct MenuBarPreview: View {
     let model: PopoverViewModel
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            let image = StatusItemController.statusImage(
-                style: model.settings.iconStyle, active: model.isAwake,
-                countdown: model.settings.showsCountdown ? model.menuBarCountdown(now: context.date) : nil)
-            HStack(spacing: 14) {
-                Image(systemName: "wifi")
-                Image(nsImage: image).renderingMode(.template)
-                Image(systemName: "battery.75percent")
-                Text(verbatim: "Sun 8 Nov  09:41")
-            }
-            .font(.system(size: 13, weight: .medium))
-            .padding(.horizontal, 16)
-            .frame(height: 30)
-            .background(.bar)
+        VStack(spacing: 0) {
+            bar(.idle, countdown: nil)
+            bar(.awake, countdown: "1:42")
+            bar(.endingSoon, countdown: "4m")
         }
+    }
+
+    private func bar(_ tone: PopoverViewModel.MenuBarTone, countdown: String?) -> some View {
+        let rendered = StatusItemController.render(
+            .init(
+                style: model.settings.iconStyle, highlight: model.settings.menuBarHighlight, tone: tone,
+                countdown: countdown,
+                increasedContrast: NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast))
+        return HStack(spacing: 14) {
+            Image(systemName: "wifi")
+            Image(nsImage: rendered.image)
+                .renderingMode(rendered.image.isTemplate ? .template : .original)
+                .foregroundStyle(rendered.tint.map { Color(nsColor: $0) } ?? Color.primary)
+                .opacity(rendered.dimmed ? 0.45 : 1)
+            Image(systemName: "battery.75percent")
+            Text(verbatim: "Sun 8 Nov  09:41")
+        }
+        .font(.system(size: 13, weight: .medium))
+        .padding(.horizontal, 16)
+        .frame(height: 30)
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .background(.bar)
     }
 }
 

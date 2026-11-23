@@ -199,6 +199,37 @@ struct PopoverViewModelTests {
         #expect(model.statusAccessibilityLabel(now: clock.now) == "uawake: keeping your Mac awake")
     }
 
+    @Test func menuBarToneIsAmberNearTheEndAndRedAfterAGuardStop() throws {
+        #expect(model.menuBarTone(now: clock.now) == .idle)
+        #expect(model.secondsUntilToneChange(now: clock.now) == nil)
+        model.start(.duration(.seconds(3600)))
+        #expect(model.menuBarTone(now: clock.now) == .awake)
+        #expect(model.secondsUntilToneChange(now: clock.now) == 3300)  // The 5-minute warning.
+        #expect(model.menuBarTone(now: clock.now + 3300) == .endingSoon)
+        #expect(model.secondsUntilToneChange(now: clock.now + 3300) == nil)
+        settings.endWarningMinutes = 10
+        #expect(model.menuBarTone(now: clock.now + 3000) == .endingSoon)
+
+        try engine.start(SessionRequest(source: .url, reason: .custom("x"), endCondition: .indefinite))
+        #expect(model.menuBarTone(now: clock.now + 3300) == .awake)  // No countdown, no amber.
+        var ended = try #require(engine.sessions.first)
+        ended.state = .ended(.lowPowerMode)
+        model.handle(.ended(ended), now: clock.now + 60)
+        #expect(model.menuBarTone(now: clock.now + 61) == .stopped)
+        #expect(model.secondsUntilToneChange(now: clock.now + 61) == 2)
+        #expect(model.menuBarTone(now: clock.now + 63) == .awake)
+    }
+
+    /// The alpha.4 bug: "prevent all sleep" on power took effect only after a setting changed.
+    @Test func preventSleepOnPowerAppliesFromLaunch() throws {
+        settings.preventSleepOnPower = true
+        let assertions = FakeAssertionProvider()
+        let engine = AppModel.makeEngine(settings: settings, assertions: assertions, clock: clock)
+        engine.apply(.test(source: .ac))
+        try engine.start(SessionRequest(source: .manual, reason: .custom("x"), endCondition: .indefinite))
+        #expect(assertions.live.values.contains("uawake: x (on power)"))
+    }
+
     // MARK: Hero
 
     @Test func heroIdleTimedAndIndefinite() throws {

@@ -327,7 +327,41 @@ final class PopoverViewModel {
 
     /// Within the end-warning lead time (5 min when the warning is off).
     func isEndingSoon(_ deadline: Date, now: Date) -> Bool {
-        deadline.timeIntervalSince(now) <= Double((settings.endWarning ?? .seconds(300)).components.seconds)
+        deadline.timeIntervalSince(now) <= endWarningSeconds
+    }
+
+    private var endWarningSeconds: TimeInterval {
+        Double((settings.endWarning ?? .seconds(300)).components.seconds)
+    }
+
+    // MARK: Menu bar
+
+    /// What the menu bar highlight shows: red briefly after a guard stop, amber near the end.
+    enum MenuBarTone: Equatable {
+        case idle, awake, endingSoon, stopped
+    }
+
+    /// How long the menu bar stays red after a guard stops a session.
+    static let guardFlash: TimeInterval = 3
+
+    /// When a guard last stopped a session.
+    private(set) var lastGuardStop: Date?
+
+    func menuBarTone(now: Date) -> MenuBarTone {
+        if let stop = lastGuardStop, (0..<Self.guardFlash).contains(now.timeIntervalSince(stop)) { return .stopped }
+        guard isAwake else { return .idle }
+        if let remaining = countdownRemaining(now: now), remaining <= endWarningSeconds { return .endingSoon }
+        return .awake
+    }
+
+    /// Seconds until ``menuBarTone(now:)`` changes by itself (the flash ends, or the warning
+    /// window starts), or `nil` when only a session change can change it.
+    func secondsUntilToneChange(now: Date) -> TimeInterval? {
+        if let stop = lastGuardStop, (0..<Self.guardFlash).contains(now.timeIntervalSince(stop)) {
+            return Self.guardFlash - now.timeIntervalSince(stop)
+        }
+        guard isAwake, let remaining = countdownRemaining(now: now), remaining > endWarningSeconds else { return nil }
+        return remaining - endWarningSeconds
     }
 
     // MARK: Banners
@@ -383,7 +417,7 @@ final class PopoverViewModel {
         case .ended(let session):
             close(session, now: now)
             pausedIDs.remove(session.id)
-            addGuardBanner(for: session)
+            addGuardBanner(for: session, now: now)
         }
     }
 
@@ -394,8 +428,9 @@ final class PopoverViewModel {
         if now > start { closedIntervals.append(DateInterval(start: start, end: now)) }
     }
 
-    private func addGuardBanner(for session: Session) {
+    private func addGuardBanner(for session: Session, now: Date) {
         guard case .ended(let cause) = session.state, let text = cause.guardText(settings: settings) else { return }
+        lastGuardStop = now
         let banner = Banner(
             kind: .guardStop(session.id), tone: .critical, symbol: "stop.circle.fill",
             title: String(localized: "Stopped by \(text.title)", comment: "Banner title: a guard ended a session"),

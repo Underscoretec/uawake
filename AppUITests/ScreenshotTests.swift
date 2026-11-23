@@ -74,15 +74,15 @@ final class ScreenshotTests: XCTestCase {
     private func capture(_ mode: String) throws {
         let base = ["-UITesting", "-UITestAppearance", mode, "-UITestBackdrop", mode, "-UITestDeviceState", "battery"]
 
-        // Popover: idle and one timed session; the menu bar pill.
+        // Popover: idle and one timed session; the menu bar icon idle, active and near its end.
         launch(base + ["-UITestCountdown", "-UITestMenuBarPreview"])
         let popover = app.windows["Popover"]
         XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
         shoot(popover, "popover-idle-\(mode)")
+        shoot(app.windows["MenuBarPreview"], "menubar-states-\(mode)")
         popover.buttons["Keep awake: 1 hr"].click()
         XCTAssertTrue(popover.text("Started manually at").waitForExistence(timeout: 3))
         shoot(popover, "popover-one-session-\(mode)")
-        shoot(app.windows["MenuBarPreview"], "menubar-pill-\(mode)")
         app.terminate()
 
         // Popover: a URL session plus a manual one.

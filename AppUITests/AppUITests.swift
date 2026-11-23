@@ -22,14 +22,36 @@ final class AppUITests: XCTestCase {
         let popover = app.windows["Popover"]
         XCTAssertTrue(popover.text("Keep awake for").waitForExistence(timeout: 10))
         XCTAssertTrue(popover.text("Your Mac can sleep normally").waitForExistence(timeout: 3))
+        XCTAssertTrue(popover.text("Tip: double-click the menu bar icon to start or stop.").exists)
         popover.labeled("Keep awake").click()
         XCTAssertTrue(popover.text("Started manually at").waitForExistence(timeout: 2))
+        XCTAssertTrue(popover.buttons["Keep awake: 1 hr"].exists)  // Presets stay offered while active.
         XCTAssertTrue(popover.text("Keeping your Mac awake").exists)
         XCTAssertTrue(popover.text("Change to").exists)
         XCTAssertFalse(popover.text("Sessions").exists)  // One session: shown in the hero.
         XCTAssertTrue(popover.labeled("Safety guards are on").exists)
         popover.labeled("Keep awake").click()
         XCTAssertTrue(popover.text("Your Mac can sleep normally").waitForExistence(timeout: 2))
+    }
+
+    /// The real menu bar icon: a single click opens the popover and never toggles. (XCUITest
+    /// delivers only one click of a double click to a menu bar item, so double clicks are
+    /// covered by `StatusItemControllerTests` and by hand: docs/TESTERS.md.)
+    @MainActor
+    func testMenuBarIconSingleClickOpensThePopoverWithoutToggling() throws {
+        app.launchArguments = ["-UITesting", "-UITestDeviceState", "battery"]
+        app.launch()
+        let standIn = app.windows["Popover"]
+        XCTAssertTrue(standIn.text("Your Mac can sleep normally").waitForExistence(timeout: 10))
+        let icon = app.statusItems.firstMatch
+        guard icon.waitForExistence(timeout: 5), icon.isHittable else {
+            throw XCTSkip("The menu bar icon isn't placed on this Mac (notch or a full menu bar)")
+        }
+        XCTAssertEqual(icon.label, "uawake: off")
+        icon.click()
+        XCTAssertTrue(app.popovers.firstMatch.waitForExistence(timeout: 3))
+        XCTAssertTrue(standIn.text("Your Mac can sleep normally").exists, "a single click toggled")
+        XCTAssertEqual(icon.label, "uawake: off")
     }
 
     @MainActor

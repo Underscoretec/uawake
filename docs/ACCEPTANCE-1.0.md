@@ -163,7 +163,14 @@ Indefinite session, watermark on). Log: `build.noindex/overnight/overnight-20261
 
 ### Flaky test: `SignalHubTests.everyMonitorTypeIsForwardedAsItsSignal`
 
-**Status:** known issue, fix planned for the next round. It looks like a bug in the test, not in the app.
+**Status:** closed in 1.0.0-alpha.6 (23 Nov 2026). It was a bug in the test, not in the app.
+
+- **Fix:** the test now waits (up to 5 s, yielding) for each expected signal instead of a fixed 20
+  yields, and checks the last two signals ignoring order.
+- **Proof:** 50 of 50 runs of the whole `UAwakeSystem` suite (31 tests) and 50 of 50 runs of the test
+  alone (`swift test --skip-build`, in a loop), no failures.
+
+History:
 
 - **Seen:** 11 Nov 2026 on macOS 27.0.1, Apple M5, while making the app icon change (`343e6b3`).
   It failed once in three full `make test` runs, so `UAwakeSystem` reported 1 failure out of 31 tests:

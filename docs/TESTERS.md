@@ -15,9 +15,9 @@ Alpha builds are unsigned and not notarized, so macOS blocks them the first time
 4. Open System Settings › Privacy & Security, scroll down, click **Open Anyway** next to the
    uawake message, and confirm.
 
-uawake lives in the menu bar. Click the icon to turn it on or off; right-click or Option-click
-for the popover. If the icon is hidden behind the notch, open uawake again from Applications to
-get its window.
+uawake lives in the menu bar. Double-click the icon to turn it on or off; click it once (or
+right-click or Option-click) for the popover. If the icon is hidden behind the notch, open uawake
+again from Applications to get its window.
 
 ## What to try
 
@@ -42,6 +42,11 @@ Terminal as `uawake: Rule: <name>` in `pmset -g assertions`.
 - **Guards.** On battery, turn on Low Power Mode or let the battery fall below the limit: rule
   and manual sessions should stop with a red banner. A rule stays off until five minutes after
   the guard clears.
+- **The menu bar icon.** A single click opens the popover and never starts or stops anything; a
+  double click starts or stops the default session. Idle, the icon is dimmed; while awake it sits
+  in a blue capsule (with the time left if Appearance › "Show remaining time" is on), amber near
+  the end, red for a moment when a guard stops a session. Try Appearance › "Highlight when
+  active", light and dark menu bars, and Accessibility › Display › Increase contrast.
 - Everyday use: sleep and wake, closing the lid, switching users, a second display.
 
 ## Reporting a problem

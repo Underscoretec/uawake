@@ -82,13 +82,13 @@ A session is the unit everything works with. Each session has:
 - Presets: 15 min, 30 min, 1 h, 2 h, 5 h, indefinite. Users can add, edit, remove and reorder presets.
 - Custom duration entry and "until" a clock time, e.g. until 18:30.
 - Extend a running session by +15 min or +1 h from the menu or a notification. Extend applies only to sessions with a deadline (duration or until-time), not to indefinite or battery-level sessions.
-- A default action for the primary click, set by the user (default: indefinite).
+- A default session for the double click, set by the user (default: indefinite).
 
 ### Menu bar and popover
 
-- Menu bar icon with clear active and inactive states, in light and dark appearance.
+- Menu bar icon with clear active and inactive states, in light and dark appearance. Idle: the native dimmed look. Active ("Highlight when active", Appearance): the bright icon and countdown in a uawake-blue capsule (default), the icon alone in colour, or no highlight. Amber within the end-warning window; red for about 3 seconds when a guard stops a session. Increase Contrast darkens the capsule. The capsule is redrawn only when its state or text changes.
 - Optional remaining-time text beside the icon: `1:42` from an hour, `42m` under an hour, `m:ss` in the final minute. It is redrawn once a minute (each second only in the final minute).
-- Primary click toggles the default session; secondary click (or Option-click) opens the popover.
+- Double click toggles the default session (only manual and URL sessions count). A single click opens the popover once the system double-click interval has passed, so a single click never toggles; secondary click, Control-click and Option-click open it at once. The idle card says "Tip: double-click the menu bar icon to start or stop."
 - Popover hero: the countdown for timed sessions; for sessions without an end time, "Awake for 2:14" (hours and minutes awake, paused time excluded) with "since 9:50 AM · Indefinite" beneath. It also says "Screen stays on" or "Screen can sleep".
 - Session rows show the countdown for timed sessions, "since 9:50" for indefinite and rule sessions (a rule's session starts when the rule starts matching), and "until 20% battery · since 9:50" for battery-level sessions. The menu bar shows only the icon for sessions without an end time.
 - The status strip shows "No sleep on power" while any session holds its on-power assertion.
@@ -135,7 +135,7 @@ Invalid URLs change nothing and log a warning; they never leave the UI out of sy
 
 ### Settings window
 
-Tabs: General (launch at login, primary click action, shortcut, allow the display to sleep during sessions, on the power adapter prevent all sleep), Durations, Safety, Appearance (icon style, countdown text, on-screen watermark), Updates (Sparkle channel: stable or beta), About (version, credits, licence).
+Tabs: General (launch at login, double-click session, shortcut, allow the display to sleep during sessions, on the power adapter prevent all sleep), Durations, Safety, Appearance (icon style, countdown text, highlight when active, on-screen watermark), Updates (Sparkle channel: stable or beta), About (version, credits, licence).
 
 ### First run
 
