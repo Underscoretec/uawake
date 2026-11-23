@@ -28,7 +28,7 @@ public struct UAwakeSettings {
             SettingsKey.showsCountdown.rawValue: false,
             SettingsKey.preventSleepOnPower.rawValue: false,
             SettingsKey.allowDisplaySleep.rawValue: false,
-            SettingsKey.updateChannel.rawValue: UpdateChannel.stable.rawValue,
+            SettingsKey.updateChannel.rawValue: UpdateChannel.default.rawValue,
             SettingsKey.iconStyle.rawValue: IconStyle.uawake.rawValue,
             SettingsKey.menuBarHighlight.rawValue: MenuBarHighlight.capsule.rawValue,
             SettingsKey.firstRunCompleted.rawValue: false,
@@ -209,7 +209,7 @@ public struct UAwakeSettings {
     }
 
     public var updateChannel: UpdateChannel {
-        get { defaults.string(forKey: SettingsKey.updateChannel.rawValue).flatMap(UpdateChannel.init) ?? .stable }
+        get { defaults.string(forKey: SettingsKey.updateChannel.rawValue).flatMap(UpdateChannel.init) ?? .default }
         nonmutating set { set(newValue.rawValue, .updateChannel) }
     }
 
@@ -418,6 +418,10 @@ public struct GlobalShortcut: Hashable, Sendable {
 
 public enum UpdateChannel: String, CaseIterable, Sendable {
     case stable, beta
+
+    /// Beta while every release is a pre-release (alpha items are on the beta channel);
+    /// becomes `.stable` with 1.0.
+    public static let `default` = UpdateChannel.beta
 }
 
 public enum PresetError: Error, Equatable, Sendable {

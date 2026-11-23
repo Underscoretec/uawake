@@ -2,12 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Sparkle. Both values are placeholders until the update feed and EdDSA key exist;
-	     the updater stays off while SUPublicEDKey is the placeholder (docs/RELEASING.md). -->
+	<!-- Sparkle. The feed is GitHub Pages (branch gh-pages); archives are GitHub Release assets.
+	     The updater stays off while SUPublicEDKey is the placeholder (docs/RELEASING.md). -->
 	<key>SUFeedURL</key>
-	<string>https://updates.example.invalid/uawake/appcast.xml</string>
+	<string>https://underscoretec.github.io/uawake/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>REPLACE_WITH_EDDSA_PUBLIC_KEY</string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUEnableAutomaticChecks</key>

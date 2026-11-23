@@ -44,7 +44,7 @@ struct SettingsTests {
         #expect(settings.sessionModes == [.system, .display])
         settings.allowDisplaySleep = true
         #expect(settings.sessionModes == [.system])
-        #expect(settings.updateChannel == .stable)
+        #expect(settings.updateChannel == .beta)
         #expect(!settings.isManaged(.batteryGuardThreshold))
     }
 
@@ -73,7 +73,7 @@ struct SettingsTests {
         #expect(settings.endWarningMinutes == 5)
         #expect(settings.thermalGuardEnabled)
         #expect(settings.primaryClickAction == .indefinite)
-        #expect(settings.updateChannel == .stable)
+        #expect(settings.updateChannel == .beta)
         settings.batteryGuardThreshold = 1
         #expect(defaults.integer(forKey: "BatteryGuardThreshold") == 5)
     }

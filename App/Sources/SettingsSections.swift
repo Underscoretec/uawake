@@ -345,7 +345,7 @@ struct AboutView: View {
 
 struct UpdatesSettingsView: View {
     let updates: UpdatesModel
-    @AppStorage(SettingsKey.updateChannel.rawValue) private var channel = UpdateChannel.stable.rawValue
+    @AppStorage(SettingsKey.updateChannel.rawValue) private var channel = UpdateChannel.default.rawValue
     @State private var automaticallyChecks = false
 
     var body: some View {

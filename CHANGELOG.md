@@ -6,6 +6,17 @@ All notable changes to uawake are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Automatic updates with Sparkle: uawake checks once a day (on by default) and asks before
+  installing; main window › Updates has "Check for Updates…". Updates are verified with an EdDSA
+  signature. The feed is `https://underscoretec.github.io/uawake/appcast.xml`; archives are the
+  GitHub Release zips.
+- Acknowledgements in the README.
+
+### Changed
+- The update channel (`UpdateChannel`) defaults to `beta` while uawake is in pre-release; alphas
+  are published on it. It becomes `stable` with 1.0.
+
 ## [1.0.0-alpha.6] - 2026-11-23
 
 Sixth internal alpha (version 1.0.0, build 6), from tester feedback: a new click model and a

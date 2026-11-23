@@ -53,8 +53,9 @@ Alpha builds are unsigned and not notarized, so macOS blocks them the first time
    uawake message, and confirm.
 
 Each new alpha build has a different signature, so macOS may ask for permissions (such as
-notifications or launch at login) again after you install it. Updates are manual until signed
-releases arrive: download the new DMG and replace the app in Applications.
+notifications or launch at login) again after you install it. From 1.0.0 alpha 7, uawake checks
+for updates once a day and offers to install them (main window › Updates); install alpha 7 itself
+from the DMG.
 
 Report bugs and ideas in [Issues](https://github.com/Underscoretec/uawake/issues/new/choose).
 Testers: see [docs/TESTERS.md](docs/TESTERS.md) for what to try and what to include in a report.

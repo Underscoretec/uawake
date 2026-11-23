@@ -33,7 +33,7 @@ one session engine. Spec: `docs/SPEC.md`. Contracts: `docs/CONTRACTS.md`. Rules:
 | `Helper/` | Pro helper (from 2.0) |
 | `Config/Version.xcconfig` | Single source of version and build number |
 | `Tools/SandboxProbe/` | Sandbox spike app, not shipped; `make probe`. Results: `docs/SANDBOX-SPIKE.md` |
-| `docs/` | Spec, contracts, user/admin guides, appcast feeds |
+| `docs/` | Spec, contracts, user/admin guides |
 | `.github/` | CI, issue and PR templates |
 
 Dependency direction: App → IPC, System → Core. Core imports nothing but Foundation.
@@ -108,12 +108,12 @@ Needs Xcode 26+ and XcodeGen. `uawake.xcodeproj` is generated from `project.yml`
   The UI binds with `@AppStorage(SettingsKey.x.rawValue)`.
 - Guards apply at start too: `start` throws `.wouldEndImmediately(cause)` instead of
   creating a session that would end at once.
-- Ad-hoc hardened builds can't load Sparkle.framework (no Team ID): local Release runs use
-  `ENABLE_HARDENED_RUNTIME=NO`.
+- Sparkle: ad-hoc builds need `ENABLE_HARDENED_RUNTIME=NO`. Feed: orphan
+  `gh-pages`, edited by `make release` in worktree `build.noindex/gh-pages`. Alphas: `beta` channel.
 - XCUITest's `launch()` terminates every running uawake (same bundle id). Never run UI tests
   during a long acceptance run. `-Headless` runs keep isolated settings and show no windows.
 - Popover colours come from `Palette` (WCAG AA, ContrastTests); no `.secondary`/`.orange` text.
-- Use `/usr/bin/log show` (zsh's `log` shadows it).
+- Use `/usr/bin/log show` (zsh `log` shadows it).
 
 ## Roadmap
 - 0.1 Core: session engine, presets, popover, guards, URL scheme, notifications.

@@ -34,7 +34,7 @@ immediately.
 | `WatermarkDrifts` | Boolean | `true` | | The centred style moves a little every few minutes (never with Reduce Motion) |
 | `WatermarkShortcutKeyCode` | Integer | none | As `GlobalShortcutKeyCode` | Global shortcut that shows or hides the watermark (toggles `WatermarkEnabled`) |
 | `WatermarkShortcutModifiers` | Integer | none | As `GlobalShortcutModifiers` | Its modifiers |
-| `UpdateChannel` | String | `stable` | `stable`, `beta` | Sparkle update feed (used once Sparkle is set up) |
+| `UpdateChannel` | String | `beta` | `stable`, `beta` | Sparkle update channel. `beta` also gets alphas; the default becomes `stable` with 1.0 |
 | `IconStyle` | String | `uawake` | `uawake`, `cup`, `eye`, `bolt` | Menu bar icon family |
 | `MenuBarHighlight` | String | `capsule` | `capsule`, `colouredIcon`, `none` | "Highlight when active" (Appearance, 1.0): a uawake-blue capsule behind the icon and countdown, the icon alone in colour, or no highlight. Amber near the end, red for 3 s when a guard stops a session |
 | `GlobalShortcutKeyCode` | Integer | none | macOS virtual key code | Global shortcut key; no shortcut unless both shortcut keys are set |

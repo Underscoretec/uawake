@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Observation
 import Sparkle
@@ -7,7 +8,7 @@ import UAwakeCore
 /// The beta channel follows the `UpdateChannel` setting.
 @MainActor
 @Observable
-final class UpdatesModel: NSObject, SPUUpdaterDelegate {
+final class UpdatesModel: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelegate {
     private let settings: UAwakeSettings
     @ObservationIgnored private var controller: SPUStandardUpdaterController?
     /// The updater started; `false` in development builds without signing keys.
@@ -18,7 +19,7 @@ final class UpdatesModel: NSObject, SPUUpdaterDelegate {
         super.init()
         guard Self.hasPublicKey(bundle) else { return }
         let controller = SPUStandardUpdaterController(
-            startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
+            startingUpdater: false, updaterDelegate: self, userDriverDelegate: self)
         do {
             try controller.updater.start()
             self.controller = controller
@@ -45,6 +46,17 @@ final class UpdatesModel: NSObject, SPUUpdaterDelegate {
 
     func checkForUpdates() {
         controller?.checkForUpdates(nil)
+    }
+
+    // A menu bar app has no Dock icon, so a scheduled update alert would open behind other
+    // windows: Sparkle asks background apps to opt in to "gentle reminders" and bring it forward.
+    nonisolated var supportsGentleScheduledUpdateReminders: Bool { true }
+
+    nonisolated func standardUserDriverWillHandleShowingUpdate(
+        _ handleShowingUpdate: Bool, forUpdate update: SUAppcastItem, state: SPUUserUpdateState
+    ) {
+        guard handleShowingUpdate, !state.userInitiated else { return }
+        MainActor.assumeIsolated { NSApp.activate() }
     }
 
     nonisolated func allowedChannels(for updater: SPUUpdater) -> Set<String> {
