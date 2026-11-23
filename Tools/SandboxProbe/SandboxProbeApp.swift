@@ -41,8 +41,11 @@ final class ProbeModel {
         save()
     }
 
+    /// Destructive probes (they lock or sleep the display) run only when named.
+    static let destructive: Set<String> = ["lockActions", "lockAssertions", "dimRemoval"]
+
     func runAll(interactive: Bool) async {
-        for probe in Probe.all { await run(probe, interactive: interactive) }
+        for probe in Probe.all where !Self.destructive.contains(probe.id) { await run(probe, interactive: interactive) }
         logger.notice("RUN-ALL DONE")
     }
 
@@ -84,6 +87,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await Probes.cleanup()
                 NSApplication.shared.terminate(nil)
             }
+        } else if let flag = arguments.firstIndex(of: "--run"), arguments.indices.contains(flag + 1),
+            let probe = Probe.all.first(where: { $0.id == arguments[flag + 1] })
+        {
+            Task { await ProbeModel.shared.run(probe, interactive: true) }
         } else if arguments.contains("--run-all") {
             Task { await ProbeModel.shared.runAll(interactive: false) }
         }

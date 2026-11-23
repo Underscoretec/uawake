@@ -21,49 +21,57 @@ struct Probe: Identifiable, Sendable {
     /// `interactive` is true for the Run button: the probe may show permission prompts.
     let run: @MainActor @Sendable (_ interactive: Bool) async -> ProbeOutcome
 
-    static let all: [Probe] = [
-        Probe(
-            id: "hotkey", title: "Global hotkey ⌃⌥⌘U (Carbon RegisterEventHotKey)", release: "0.1", run: Probes.hotkey),
-        Probe(
-            id: "deviceState", title: "Battery, power source, Low Power Mode, thermal", release: "0.1",
-            run: Probes.deviceState),
-        Probe(
-            id: "lifecycle", title: "Fast user switching and sleep/wake notifications", release: "0.1",
-            run: Probes.lifecycle),
-        Probe(id: "loginItem", title: "SMAppService.mainApp login item", release: "0.1", run: Probes.loginItem),
-        Probe(id: "launchAgent", title: "SMAppService.agent with KeepAlive", release: "1.3", run: Probes.launchAgent),
-        Probe(
-            id: "runningApps", title: "Running apps and frontmost app (NSWorkspace)", release: "1.0",
-            run: Probes.runningApps),
-        Probe(
-            id: "camera", title: "Camera in use (CoreMediaIO DeviceIsRunningSomewhere)", release: "1.0",
-            run: Probes.camera),
-        Probe(
-            id: "microphone", title: "Microphone in use (Core Audio input devices)", release: "1.0",
-            run: Probes.microphone),
-        Probe(
-            id: "audioOutput", title: "Audio output playing (default output device)", release: "1.0",
-            run: Probes.audioOutput),
-        Probe(
-            id: "cpu", title: "CPU load: system-wide and per-process (proc_pidinfo)", release: "1.0", run: Probes.cpu),
-        Probe(
-            id: "network", title: "Network throughput (getifaddrs byte counters)", release: "1.0", run: Probes.network),
-        Probe(id: "displays", title: "Displays and connect/disconnect", release: "1.0", run: Probes.displays),
-        Probe(id: "usb", title: "USB devices and attach/detach (IOKit matching)", release: "1.0", run: Probes.usb),
-        Probe(
-            id: "bluetooth", title: "Connected Bluetooth devices (IOBluetooth)", release: "1.0", run: Probes.bluetooth),
-        Probe(id: "wifi", title: "Wi-Fi network name (CoreWLAN)", release: "1.0", run: Probes.wifi),
-        Probe(id: "calendar", title: "In-progress calendar events (EventKit)", release: "1.0", run: Probes.calendar),
-        Probe(
-            id: "preventSystemSleep", title: "Create and release PreventSystemSleep assertion", release: "1.0",
-            run: Probes.preventSystemSleep),
-        Probe(id: "assertions", title: "Other apps' power assertions", release: "1.2", run: Probes.assertions),
-        Probe(
-            id: "sleepHistory", title: "Sleep/wake history (sysctl, pmset -g log)", release: "1.2",
-            run: Probes.sleepHistory),
-        Probe(
-            id: "managedPrefs", title: "Managed preferences (objectIsForced)", release: "1.3", run: Probes.managedPrefs),
-    ]
+    static let all: [Probe] =
+        [
+            Probe(
+                id: "hotkey", title: "Global hotkey ⌃⌥⌘U (Carbon RegisterEventHotKey)", release: "0.1",
+                run: Probes.hotkey),
+            Probe(
+                id: "deviceState", title: "Battery, power source, Low Power Mode, thermal", release: "0.1",
+                run: Probes.deviceState),
+            Probe(
+                id: "lifecycle", title: "Fast user switching and sleep/wake notifications", release: "0.1",
+                run: Probes.lifecycle),
+            Probe(id: "loginItem", title: "SMAppService.mainApp login item", release: "0.1", run: Probes.loginItem),
+            Probe(
+                id: "launchAgent", title: "SMAppService.agent with KeepAlive", release: "1.3", run: Probes.launchAgent),
+            Probe(
+                id: "runningApps", title: "Running apps and frontmost app (NSWorkspace)", release: "1.0",
+                run: Probes.runningApps),
+            Probe(
+                id: "camera", title: "Camera in use (CoreMediaIO DeviceIsRunningSomewhere)", release: "1.0",
+                run: Probes.camera),
+            Probe(
+                id: "microphone", title: "Microphone in use (Core Audio input devices)", release: "1.0",
+                run: Probes.microphone),
+            Probe(
+                id: "audioOutput", title: "Audio output playing (default output device)", release: "1.0",
+                run: Probes.audioOutput),
+            Probe(
+                id: "cpu", title: "CPU load: system-wide and per-process (proc_pidinfo)", release: "1.0",
+                run: Probes.cpu),
+            Probe(
+                id: "network", title: "Network throughput (getifaddrs byte counters)", release: "1.0",
+                run: Probes.network),
+            Probe(id: "displays", title: "Displays and connect/disconnect", release: "1.0", run: Probes.displays),
+            Probe(id: "usb", title: "USB devices and attach/detach (IOKit matching)", release: "1.0", run: Probes.usb),
+            Probe(
+                id: "bluetooth", title: "Connected Bluetooth devices (IOBluetooth)", release: "1.0",
+                run: Probes.bluetooth),
+            Probe(id: "wifi", title: "Wi-Fi network name (CoreWLAN)", release: "1.0", run: Probes.wifi),
+            Probe(
+                id: "calendar", title: "In-progress calendar events (EventKit)", release: "1.0", run: Probes.calendar),
+            Probe(
+                id: "preventSystemSleep", title: "Create and release PreventSystemSleep assertion", release: "1.0",
+                run: Probes.preventSystemSleep),
+            Probe(id: "assertions", title: "Other apps' power assertions", release: "1.2", run: Probes.assertions),
+            Probe(
+                id: "sleepHistory", title: "Sleep/wake history (sysctl, pmset -g log)", release: "1.2",
+                run: Probes.sleepHistory),
+            Probe(
+                id: "managedPrefs", title: "Managed preferences (objectIsForced)", release: "1.3",
+                run: Probes.managedPrefs),
+        ] + LockDimProbes.all
 }
 
 private func outcome(_ value: String, _ result: ProbeResult) -> ProbeOutcome {

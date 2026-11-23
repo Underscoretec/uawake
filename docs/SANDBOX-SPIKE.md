@@ -8,7 +8,7 @@ Which detection and system APIs work from the sandboxed uawake app. The probe ap
 uawake (`app-sandbox`, `network.client`). Probe-only extras: `device.bluetooth`,
 `personal-information.location`, `personal-information.calendars`, and `device.camera`
 (added after the camera probe failed without it; see below).
-**Date:** 8 Nov 2026.
+**Date:** 8 Nov 2026 (lock and dim rows: 23 Nov 2026).
 
 ## Results
 
@@ -35,8 +35,18 @@ uawake (`app-sandbox`, `network.client`). Probe-only extras: `device.bluetooth`,
 | Other apps' power assertions | 1.2 | Works | None | `IOPMCopyAssertionsByProcess` lists other pids with assertion type and name (powerd, caffeinate, HID). `IOPMCopyAssertionsStatus` gives system-wide levels. | — |
 | Sleep/wake history | 1.2 | Limited | — | `pmset -g log` runs but is blocked from its data: "no messages found in PM ASL data store at: /var/log/powermanagement" (unsandboxed: ~36k lines, 523 sleeps). `sysctl kern.sleeptime` and `kern.waketime` give only the last sleep and wake. | Record sleep/wake events from `NSWorkspace` in the 1.2 history database from install onward. Backfill the 7 days through the CLI (outside the sandbox), or drop backfill. |
 | Managed preferences (`objectIsForced`) | 1.3 | Pending manual check | — | No profile installed: `objectIsForced = false`, as expected. | Pending manual check (1.3). |
+| Lock: start screen saver (`NSWorkspace.openApplication` on `ScreenSaverEngine.app`) | alpha.8 | Works | None | Launch ok; `com.apple.screensaver.didstart`, then `com.apple.screenIsLocked` within 1 s. **Setting at test time: "Require password" = immediately** (`sysadminctl -screenLock status`). Other delays not tested (the maintainer's setting was not changed). | If delay is not immediate: say so in the UI (see `LOCK-DIM-DESIGN.md`). |
+| Lock: sleep the display (`/usr/bin/pmset displaysleepnow` run from the sandbox) | alpha.8 | Works | None | `Process` exec exits 0 from the sandbox. `screensDidSleep` delivered; the session was locked afterwards (immediate setting). Works while another app holds a display assertion. A `pmset` exec is a CLI call, less robust than the API above. | Secondary method only. |
+| Lock: other public routes | alpha.8 | Not usable | — | `CGSession -suspend` is gone from macOS 27. `IODisplayWrangler` exists but only reads. Posting ⌃⌘Q needs Accessibility. A user-made Shortcut with "Lock Screen" run through `/usr/bin/shortcuts` is possible but needs setup (`shortcuts list` runs from the sandbox: exit 0). No private APIs (`SACLockScreenImmediate`) tried. | — |
+| Read "Require password" setting | alpha.8 | Works (CLI only) | None | `CFPreferencesCopyValue` for `com.apple.screensaver` (`askForPassword`, `askForPasswordDelay`, any-host and current-host) returns nil in the sandbox. `/usr/sbin/sysadminctl -screenLock status` runs and prints "screenLock delay is immediate" (stderr; parse defensively: "immediate", "off", or a duration). | If unreadable: treat as unknown and word the UI as "starts the screen saver". |
+| Lock/unlock detection | alpha.8 | Works | None | Distributed notifications `com.apple.screenIsLocked`, `screenIsUnlocked`, `screensaver.didstart`, `willstop`, `didstop` all delivered to the sandboxed app, plus `NSWorkspace.screensDidSleep/Wake`. `screenIsUnlocked` arrives **before** `CGSessionCopyCurrentDictionary()["CGSSessionScreenIsLocked"]` flips to false: trust the notification, not the flag. The flag does flip true on lock. `NSWorkspace.sessionDidResignActive` is fast-user-switching only; no events seen for plain lock. | — |
+| User idle time | alpha.8 | Works | None | `CGEventSource.secondsSinceLastEventType(.combinedSessionState, anyInput)` and IOKit `IOHIDSystem` `HIDIdleTime` agree (109.7 s vs 109.8 s) from the sandbox with `AXIsProcessTrusted() == false`. No Accessibility or Input Monitoring prompt. | — |
+| Dim overlay window | alpha.8 | Works (partly verified) | None | One borderless window per `NSScreen` (1 display tested), level `.screenSaver` (CG layer 1000), `ignoresMouseEvents = true`, `collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]`, `sharingType = .none`. `CGWindowListCopyWindowInfo` shows `kCGWindowSharingState = 0`. **Not verified:** actual absence from a screenshot or recording (`screencapture` from the shell failed: "could not create image from display", no Screen Recording grant); second display; other Spaces; above a full-screen app. | Manual checks listed below. |
+| Dim removal on input | alpha.8 | Not run | None | Probe `dimRemoval` polls idle time at 50 Hz (no permission) and removes the overlay on the first drop; needs a hand to move the mouse. Expected latency ≤ 20 ms plus one frame. | Pending manual check. |
+| Assertions while locked | alpha.8 | Partly verified | None | Held `PreventUserIdleSystemSleep`, `PreventSystemSleep` and `PreventUserIdleDisplaySleep` across a lock: all three stayed listed by `IOPMCopyAssertionsByProcess`. Releasing only the display assertion left the other two listed. **Not verified:** that the display then idle-sleeps (the probe window saw user activity after +15 s and 301 s passed without `screensDidSleep`). | Hands-off rerun: `open -n SandboxProbe.app --args --run lockAssertions`, do not touch the Mac for 6 min (display sleep is 3 min on the test Mac). |
 
 ### Pending manual checks
+- **alpha.8:** dim overlay absent from a QuickTime recording and screenshot; second display; other Spaces and over a full-screen app; removal latency (`--run dimRemoval`); display idle-sleeps after only the display assertion is released (`--run lockAssertions`); lock with "Require password" set to 5 minutes and to Never; Intel.
 - **0.1:** fast user switching (needs a second user account).
 - **1.0:** live camera, microphone and audio-output in-use; USB attach/detach; external display
   connect/disconnect; Bluetooth after granting; Wi-Fi SSID after granting Location; calendar
@@ -46,7 +56,7 @@ uawake (`app-sandbox`, `network.client`). Probe-only extras: `device.bluetooth`,
 ## How to run the probe
 
 1. `make probe` builds the Release probe into `build.noindex/DerivedData/Build/Products/Release/SandboxProbe.app`.
-2. Headless, no prompts: `open -n <app> --args --run-all`. The app keeps running and logs changes.
+2. Headless, no prompts: `open -n <app> --args --run-all` (skips probes that lock or sleep the display; run one with `--args --run <id>`, e.g. `lockActions`). The app keeps running and logs changes.
    Read the results with
    `/usr/bin/log show --predicate 'subsystem == "com.underscoretec.uawake.probe"' --last 10m --style compact`
    (in zsh, call `/usr/bin/log`; plain `log` is a shell builtin).
