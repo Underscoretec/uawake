@@ -10,7 +10,8 @@ rules do it for you: while you present, are on a call, build or download. uawake
 guards stop sessions at low battery, in Low Power Mode, when your Mac gets too warm, or after a
 maximum duration.
 
-**Status:** 1.0.0 alpha 6, in internal testing ([Testing the alpha](#testing-the-alpha)). MIT licence.
+**Status:** public alpha (1.0.0 alpha 6). Builds are unsigned for now; see
+[Testing the alpha](#testing-the-alpha). MIT licence.
 
 <p>
   <img src="docs/design/screenshots/popover-one-session-light.png" width="300" alt="The uawake popover keeping the Mac awake for one hour, in light mode">
@@ -44,7 +45,8 @@ Requires macOS 14 Sonoma or later, on Apple silicon or Intel.
 
 Alpha builds are unsigned and not notarized, so macOS blocks them the first time.
 
-1. Download the DMG from [GitHub Releases](https://github.com/Underscoretec/uawake/releases).
+1. Download the latest `uawake-<version>.dmg` from
+   [GitHub Releases](https://github.com/Underscoretec/uawake/releases).
 2. Open it and drag uawake to Applications.
 3. Open uawake once. macOS says it can't verify the app; click Done.
 4. Open System Settings › Privacy & Security, scroll down, click **Open Anyway** next to the
@@ -101,6 +103,12 @@ for the product spec and [docs/CONTRACTS.md](docs/CONTRACTS.md) for the core con
 ## Credits
 
 Created by Abhijit Roy · Underscore Technology.
+
+## Acknowledgements
+
+uawake follows a long line of Mac keep-awake tools: Apple's caffeinate, Caffeine by Lighthead
+Software, KeepingYouAwake by Marcel Dierkes, and Amphetamine by William Gustafson. uawake is an
+independent implementation and shares no code with any of them.
 
 ## Licence
 

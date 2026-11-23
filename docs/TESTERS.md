@@ -51,8 +51,7 @@ Terminal as `uawake: Rule: <name>` in `pmset -g assertions`.
 
 ## Reporting a problem
 
-Open a [GitHub issue](https://github.com/Underscoretec/uawake/issues/new/choose), or post in our
-Teams channel. Please include:
+Open a [GitHub issue](https://github.com/Underscoretec/uawake/issues/new/choose). Please include:
 
 - what you did, what you expected and what happened;
 - the uawake version (main window › About) and your macOS version (Apple menu › About This Mac);
